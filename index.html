@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Urenstaat Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin: 0 0 15px 0; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.85rem; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-save { background: var(--success); color: white; margin-top: 20px; }
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 70px; align-items: center; }
+        nav button { flex: 1; background: none; color: #888; border: none; font-size: 0.8rem; }
+        nav button.active { color: var(--primary); font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="view-login" class="container">
+        <div class="card" style="margin-top: 50px; text-align: center;">
+            <h2>Wie ben je?</h2>
+            <select id="user-select">
+                <option value="Maarten de Klerk">Maarten de Klerk</option>
+                <option value="Bob">Bob</option>
+                <option value="Stef">Stef</option>
+            </select>
+            <button class="btn-save" onclick="login()" style="background: var(--primary);">Inloggen</button>
+        </div>
+    </div>
+
+    <div id="view-input" class="container hidden">
+        <h2 id="welcome-msg">Hoi!</h2>
+        <div class="card">
+            <label>Datum</label>
+            <input type="date" id="datum_input">
+            <div class="grid">
+                <div><label>Start Werk *</label><input type="time" id="w_start"></div>
+                <div><label>Eind Werk *</label><input type="time" id="w_eind"></div>
+            </div>
+            <div style="margin-top:15px; background:#f9f9f9; padding:10px; border-radius:10px;">
+                <label style="margin:0; color:#666;">Standby (Optioneel)</label>
+                <div class="grid">
+                    <div><label>Vanaf</label><input type="time" id="s_start"></div>
+                    <div><label>Tot</label><input type="time" id="s_eind"></div>
+                </div>
+            </div>
+            <button class="btn-save" id="save-btn" onclick="saveData()">Zet in urenstaat</button>
+        </div>
+    </div>
+
+    <div id="view-export" class="container hidden">
+        <h2>Export & Google Sheets</h2>
+        <div class="card">
+            <label>Maand selecteren</label>
+            <select id="month-select">
+                <option value="0">Januari</option><option value="1">Februari</option>
+                <option value="2">Maart</option><option value="3">April</option>
+                <option value="4">Mei</option><option value="5">Juni</option>
+                <option value="6">Juli</option><option value="7">Augustus</option>
+                <option value="8">September</option><option value="9">Oktober</option>
+                <option value="10">November</option><option value="11">December</option>
+            </select>
+
+            <button class="btn-save" onclick="syncToGoogleSheets(this)" style="background: #4285F4; margin-bottom: 10px;">
+                Stuur naar Google Sheets
+            </button>
+
+            <button class="btn-save" onclick="downloadForExcel()" style="background: #333; font-size: 0.8rem; padding: 10px;">
+                Download als losse CSV (backup)
+            </button>
+
+            <p style="font-size:0.7rem; color:#666; margin-top:10px;">
+                Klik op de blauwe knop om alles direct in je Google Sheet te zetten.
+            </p>
+        </div>
+    </div>
+
+</div>
+<nav id="navbar" class="hidden">    <button onclick="showPage('input')">➕ Invoeren</button>
+    <button onclick="showPage('export')">📂 Download</button>
+    <button onclick="logout()">Uitloggen</button>
+</nav>
+
+<script>
+    const SUPABASE_URL = 'https://lfchgbinrewruakjwunv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Nw69Pzdjr9H8Fv1DbPTwyw_d1Nhtzxl';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxuxwyFHt5D4MXpCD3gMFRUxVseaRK1IDC1A4geOlI2_6UM7g0s2WTlFixZGuWH7LlPg/exec';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = "";
+
+    function login() {
+        currentUser = document.getElementById('user-select').value;
+        document.getElementById('welcome-msg').innerText = "Hoi " + currentUser;
+        document.getElementById('navbar').classList.remove('hidden');
+        showPage('input');
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        document.getElementById('view-' + id).classList.remove('hidden');
+    }
+
+    async function syncToGoogleSheets(btnElement) {
+        const mIdx = document.getElementById('month-select').value;
+        const oldText = btnElement.innerText;
+        btnElement.innerText = "Bezig met synchroniseren...";
+        btnElement.style.opacity = "0.5";
+        btnElement.disabled = true;
+
+        // 1. Haal data op uit Supabase
+        const { data, error } = await supabaseClient.from('uren_registratie')
+            .select('*')
+            .eq('user_name', currentUser);
+
+        if (error) return alert("Fout: " + error.message);
+
+        // 2. Filter en bereken data
+        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
+
+        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
+            const datumObj = new Date(d.datum);
+            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
+            const berekenUren = (s, e) => {
+                if(!s || !e) return "0";
+                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
+                return diff.toFixed(2).replace('.', ',');
+            };
+
+            return {
+                datum: d.datum,
+                dag: dagNaam,
+                werk_start: d.werk_start,
+                werk_eind: d.werk_eind,
+                wTotaal: berekenUren(d.werk_start, d.werk_eind),
+                sStart: d.stby_start || "",
+                sEind: d.stby_eind || "",
+                sTotaal: berekenUren(d.stby_start, d.stby_eind)
+            };
+        });
+
+        // 3. Verstuur naar Google Script
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Belangrijk voor Google Scripts
+                body: JSON.stringify(rijenVoorGoogle)
+            });
+            alert("Alles staat in Google Sheets!");
+        } catch (e) {
+            alert("Er ging iets mis met de verbinding.");
+        }
+        btn.innerText = "Sync naar Google Sheets";
+        btnElement.innerText = oldText;
+        btnElement.style.opacity = "1";
+        btnElement.disabled = false;
+    }
+
+
+    function logout() {
+        document.getElementById('navbar').classList.add('hidden');
+        showPage('login');
+    }
+
+
+    async function saveData() {
+        const data = {
+            user_name: currentUser,
+            datum: document.getElementById('datum_input').value,
+            werk_start: document.getElementById('w_start').value,
+            werk_eind: document.getElementById('w_eind').value,
+            stby_start: document.getElementById('s_start').value || null,
+            stby_eind: document.getElementById('s_eind').value || null
+        };
+
+        if(!data.werk_start || !data.werk_eind) return alert("Werk-tijden zijn verplicht!");
+
+        const btn = document.getElementById('save-btn');
+        btn.innerText = "Bezig...";
+
+        // Gebruik hier ook 'supabaseClient'
+        const { error } = await supabaseClient.from('uren_registratie').insert([data]);
+
+        if (error) {
+            alert("Fout bij opslaan: " + error.message);
+        } else {
+            alert("Opgeslagen in database!");
+            document.getElementById('w_start').value = "";
+            document.getElementById('w_eind').value = "";
+        }
+        btn.innerText = "Zet in urenstaat";
+    }
+
+    async function downloadForExcel() {
+        const mIdx = document.getElementById('month-select').value;
+        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+
+        // Gebruik hier ook 'supabaseClient'
+        const { data, error } = await supabaseClient.from('uren_registratie')
+            .select('*')
+            .eq('user_name', currentUser);
+
+        if (error) return alert("Fout bij ophalen: " + error.message);
+
+        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
+
+        let csv = "Datum;Dag;Starttijd;Eindtijd;Pauze;Totaal uren;Standby van;Standby tot;Totaal Standby\n";
+
+        filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).forEach(d => {
+            const datumObj = new Date(d.datum);
+            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
+
+            const berekenUren = (s, e) => {
+                if(!s || !e) return "0";
+                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
+                return diff.toFixed(2).replace('.', ',');
+            };
+
+            csv += `${d.datum};${dagNaam};${d.werk_start};${d.werk_eind};0;${berekenUren(d.werk_start, d.werk_eind)};${d.stby_start || ''};${d.stby_eind || ''};${berekenUren(d.stby_start, d.stby_eind)}\n`;
+        });
+
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Urenstaat_${currentUser.replace(' ', '_')}_${maanden[mIdx]}_2026.csv`;
+        link.click();
+    }
+</script>
+
+</body>
+</html>
