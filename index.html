@@ -74,6 +74,10 @@
                 Stuur naar Google Sheets
             </button>
 
+            <button class="btn-save" onclick="clearSheet(this)" style="background: #dc3545; margin-top: 20px; font-size: 0.8rem;">
+                🗑️ Verse Google Sheet (Maak leeg)
+            </button>
+
             <button class="btn-save" onclick="downloadForExcel()" style="background: #333; font-size: 0.8rem; padding: 10px;">
                 Download als losse CSV (backup)
             </button>
@@ -93,10 +97,17 @@
 <script>
     const SUPABASE_URL = 'https://lfchgbinrewruakjwunv.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Nw69Pzdjr9H8Fv1DbPTwyw_d1Nhtzxl';
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxuxwyFHt5D4MXpCD3gMFRUxVseaRK1IDC1A4geOlI2_6UM7g0s2WTlFixZGuWH7LlPg/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJB0k63jGd736aB3XN7a8y-HsxbFohBTMyUEwadipjKvFXTIz3xxxLutZiBJDDgg_YdA/exec';
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = "";
+
+    // Zet de datum-input automatisch op de dag van vandaag
+    document.getElementById('datum_input').valueAsDate = new Date();
+
+    // Zet de maand-selectie automatisch op de huidige maand (0=Jan, 1=Feb, etc.)
+    document.getElementById('month-select').value = new Date().getMonth();
+    // ----------------------------
 
     function login() {
         currentUser = document.getElementById('user-select').value;
@@ -234,6 +245,32 @@
         link.href = url;
         link.download = `Urenstaat_${currentUser.replace(' ', '_')}_${maanden[mIdx]}_2026.csv`;
         link.click();
+    }
+    async function clearSheet(btnElement) {
+        if (!confirm("Weet je zeker dat je de Google Sheet van deze maand wilt leegmaken? De data in Supabase blijft wel bewaard.")) return;
+
+        const mIdx = document.getElementById('month-select').value;
+        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+
+        btnElement.innerText = "Bezig met wissen...";
+        btnElement.disabled = true;
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    action: "clear",
+                    maandNaam: maanden[mIdx]
+                })
+            });
+            alert("De Google Sheet is nu leeg!");
+        } catch (e) {
+            alert("Er ging iets mis bij het wissen.");
+        }
+
+        btnElement.innerText = "🗑️ Wis Google Sheet (Maak leeg)";
+        btnElement.disabled = false;
     }
 </script>
 
