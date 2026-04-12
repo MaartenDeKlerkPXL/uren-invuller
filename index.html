@@ -97,10 +97,96 @@
 <script>
     const SUPABASE_URL = 'https://lfchgbinrewruakjwunv.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Nw69Pzdjr9H8Fv1DbPTwyw_d1Nhtzxl';
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJB0k63jGd736aB3XN7a8y-HsxbFohBTMyUEwadipjKvFXTIz3xxxLutZiBJDDgg_YdA/exec';
+
+    const USER_SHEETS = {
+        "Maarten de Klerk": "https://script.google.com/macros/s/AKfycbyJB0k63jGd736aB3XN7a8y-HsxbFohBTMyUEwadipjKvFXTIz3xxxLutZiBJDDgg_YdA/exec",
+        "Bob": "https://script.google.com/macros/s/DE_BOB_URL/exec",
+        "Stef": "https://script.google.com/macros/s/DE_STEF_URL/exec"
+    };
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = "";
+
+    // Gebruik dit blok om de datum bij het laden in te vullen:
+    window.onload = function() {
+        document.getElementById('datum_input').valueAsDate = new Date();
+        document.getElementById('month-select').value = new Date().getMonth();
+    };
+    // 2. De functie om uren naar Google Sheets te sturen
+    async function syncToGoogleSheets(btnElement) {
+        const scriptUrl = USER_SHEETS[currentUser];
+        if (!scriptUrl || scriptUrl.includes("DE_")) {
+            return alert("Fout: Geen Google Sheet gekoppeld aan " + currentUser);
+        }
+
+        const mIdx = document.getElementById('month-select').value;
+        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+        const geselecteerdeMaandNaam = maanden[mIdx];
+
+        const oldText = btnElement.innerText;
+        btnElement.innerText = "Bezig...";
+        btnElement.style.opacity = "0.5";
+        btnElement.disabled = true;
+
+        // Haal data op uit Supabase voor de ingelogde gebruiker
+        const { data, error } = await supabaseClient.from('uren_registratie')
+            .select('*')
+            .eq('user_name', currentUser);
+
+        if (error) {
+            btnElement.innerText = oldText;
+            btnElement.style.opacity = "1";
+            btnElement.disabled = false;
+            return alert("Supabase fout: " + error.message);
+        }
+
+        // Filter uren van de geselecteerde maand
+        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
+
+        if (filtered.length === 0) {
+            btnElement.innerText = oldText;
+            btnElement.style.opacity = "1";
+            btnElement.disabled = false;
+            return alert("Geen uren gevonden voor " + geselecteerdeMaandNaam);
+        }
+
+        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
+            const datumObj = new Date(d.datum);
+            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
+            const berekenUren = (s, e) => {
+                if(!s || !e) return "0";
+                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
+                return diff.toFixed(2);
+            };
+
+            return {
+                maandNaam: geselecteerdeMaandNaam,
+                datum: d.datum,
+                dag: dagNaam,
+                werk_start: d.werk_start,
+                werk_eind: d.werk_eind,
+                wTotaal: berekenUren(d.werk_start, d.werk_eind),
+                sStart: d.stby_start || "",
+                sEind: d.stby_eind || "",
+                sTotaal: berekenUren(d.stby_start, d.stby_eind)
+            };
+        });
+
+        try {
+            await fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(rijenVoorGoogle)
+            });
+            alert("Sync voltooid voor " + currentUser + "!");
+        } catch (e) {
+            alert("Verbindingsfout met Google Sheets.");
+        }
+
+        btnElement.innerText = oldText;
+        btnElement.style.opacity = "1";
+        btnElement.disabled = false;
+    }
 
     // Zet de datum-input automatisch op de dag van vandaag
     document.getElementById('datum_input').valueAsDate = new Date();
@@ -121,60 +207,6 @@
         document.getElementById('view-' + id).classList.remove('hidden');
     }
 
-    async function syncToGoogleSheets(btnElement) {
-        const mIdx = document.getElementById('month-select').value;
-        const oldText = btnElement.innerText;
-        btnElement.innerText = "Bezig met synchroniseren...";
-        btnElement.style.opacity = "0.5";
-        btnElement.disabled = true;
-
-        // 1. Haal data op uit Supabase
-        const { data, error } = await supabaseClient.from('uren_registratie')
-            .select('*')
-            .eq('user_name', currentUser);
-
-        if (error) return alert("Fout: " + error.message);
-
-        // 2. Filter en bereken data
-        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
-
-        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
-            const datumObj = new Date(d.datum);
-            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
-            const berekenUren = (s, e) => {
-                if(!s || !e) return "0";
-                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
-                return diff.toFixed(2).replace('.', ',');
-            };
-
-            return {
-                datum: d.datum,
-                dag: dagNaam,
-                werk_start: d.werk_start,
-                werk_eind: d.werk_eind,
-                wTotaal: berekenUren(d.werk_start, d.werk_eind),
-                sStart: d.stby_start || "",
-                sEind: d.stby_eind || "",
-                sTotaal: berekenUren(d.stby_start, d.stby_eind)
-            };
-        });
-
-        // 3. Verstuur naar Google Script
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Belangrijk voor Google Scripts
-                body: JSON.stringify(rijenVoorGoogle)
-            });
-            alert("Alles staat in Google Sheets!");
-        } catch (e) {
-            alert("Er ging iets mis met de verbinding.");
-        }
-        btn.innerText = "Sync naar Google Sheets";
-        btnElement.innerText = oldText;
-        btnElement.style.opacity = "1";
-        btnElement.disabled = false;
-    }
 
 
     function logout() {
