@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Urenstaat Tool</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
@@ -95,15 +96,6 @@
 </nav>
 
 <script>
-    const SUPABASE_URL = 'https://lfchgbinrewruakjwunv.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_Nw69Pzdjr9H8Fv1DbPTwyw_d1Nhtzxl';
-
-    const USER_SHEETS = {
-        "Maarten de Klerk": "https://script.google.com/macros/s/AKfycbyJB0k63jGd736aB3XN7a8y-HsxbFohBTMyUEwadipjKvFXTIz3xxxLutZiBJDDgg_YdA/exec",
-        "Bob": "https://script.google.com/macros/s/DE_BOB_URL/exec",
-        "Stef": "https://script.google.com/macros/s/DE_STEF_URL/exec"
-    };
-
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = "";
 
@@ -188,13 +180,6 @@
         btnElement.disabled = false;
     }
 
-    // Zet de datum-input automatisch op de dag van vandaag
-    document.getElementById('datum_input').valueAsDate = new Date();
-
-    // Zet de maand-selectie automatisch op de huidige maand (0=Jan, 1=Feb, etc.)
-    document.getElementById('month-select').value = new Date().getMonth();
-    // ----------------------------
-
     function login() {
         currentUser = document.getElementById('user-select').value;
         document.getElementById('welcome-msg').innerText = "Hoi " + currentUser;
@@ -203,8 +188,17 @@
     }
 
     function showPage(id) {
+        // Verberg alle containers
         document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        // Toon de juiste container
         document.getElementById('view-' + id).classList.remove('hidden');
+
+        // Update de navigatie knoppen
+        document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+        // Zoek de knop die bij deze pagina hoort (bijv. de knop met 'Invoeren' voor id 'input')
+        const navButtons = document.querySelectorAll('nav button');
+        if (id === 'input') navButtons[0].classList.add('active');
+        if (id === 'export') navButtons[1].classList.add('active');
     }
 
 
@@ -239,6 +233,8 @@
             alert("Opgeslagen in database!");
             document.getElementById('w_start').value = "";
             document.getElementById('w_eind').value = "";
+            document.getElementById('s_start').value = "";
+            document.getElementById('s_eind').value = "";
         }
         btn.innerText = "Zet in urenstaat";
     }
@@ -279,7 +275,10 @@
         link.click();
     }
     async function clearSheet(btnElement) {
-        if (!confirm("Weet je zeker dat je de Google Sheet van deze maand wilt leegmaken? De data in Supabase blijft wel bewaard.")) return;
+        const scriptUrl = USER_SHEETS[currentUser]; // Gebruik de URL van de gebruiker
+        if (!scriptUrl || scriptUrl.includes("DE_")) return alert("Geen sheet gekoppeld.");
+
+        if (!confirm("Weet je zeker dat je de Google Sheet van " + currentUser + " wilt leegmaken?")) return;
 
         const mIdx = document.getElementById('month-select').value;
         const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
@@ -288,7 +287,7 @@
         btnElement.disabled = true;
 
         try {
-            await fetch(GOOGLE_SCRIPT_URL, {
+            await fetch(scriptUrl, { // Gebruik scriptUrl in plaats van GOOGLE_SCRIPT_URL
                 method: 'POST',
                 mode: 'no-cors',
                 body: JSON.stringify({
