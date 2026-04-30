@@ -6,3 +6,9 @@ const USER_SHEETS = {
     "Bob": "https://script.google.com/macros/s/DE_BOB_URL/exec",
     "Stef": "https://script.google.com/macros/s/DE_STEF_URL/exec"
 };
+
+const USER_PASSWORDS = {
+    "Maarten de Klerk": "mdk",
+    "Bob": "123",
+    "Stef": "456"
+};

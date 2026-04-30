@@ -3,211 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Urenstaat Tool</title>
+    <title>Maatexpress Urenregistratie</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
-        .container { padding: 20px; max-width: 500px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { margin: 0 0 15px 0; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.85rem; }
-        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .btn-save { background: var(--success); color: white; margin-top: 20px; }
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; height: 70px; align-items: center; }
-        nav button { flex: 1; background: none; color: #888; border: none; font-size: 0.8rem; }
-        nav button.active { color: var(--primary); font-weight: bold; }
+        :root {
+            --mx-blue: #0e72b5;
+            --mx-red: #bd0926;
+            --bg: #ffffff;
+            --card-bg: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding-bottom: 90px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { padding: 20px; max-width: 480px; margin: auto; }
+
+        /* Modern Card Design */
+        .card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        h2 { margin: 0 0 20px 0; font-size: 1.4rem; color: var(--mx-blue); font-weight: 800; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Input Styles */
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin-top: 6px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--mx-blue);
+            box-shadow: 0 0 0 4px rgba(14, 114, 181, 0.1);
+        }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:active { transform: scale(0.98); opacity: 0.9; }
+
+        .btn-primary { background: var(--mx-blue); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: white; color: var(--mx-red); border: 2px solid var(--mx-red); }
+        .btn-outline { background: white; color: var(--text); border: 2px solid var(--border); }
+
+        /* Navigatie */
+        nav {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            height: 70px;
+            z-index: 1000;
+        }
+
+        nav button {
+            flex: 1;
+            background: none;
+            color: #94a3b8;
+            border: none;
+            font-size: 0.75rem;
+            flex-direction: column;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        nav button .icon { font-size: 1.4rem; }
+        nav button.active { color: var(--mx-blue); }
+
+        /* Real-time Indicator */
+        .hours-badge {
+            background: var(--mx-blue);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Toast Message */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+        }
+
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
+<div id="toast">Bericht</div>
+
 <div id="app">
+    <!-- LOGIN -->
+    <!-- Zoek dit blok in je old-index.html -->
     <div id="view-login" class="container">
-        <div class="card" style="margin-top: 50px; text-align: center;">
-            <h2>Wie ben je?</h2>
+        <div style="text-align: center; margin: 60px 0 30px;">
+            <div style="font-size: 3rem; font-family: 'Myriad Pro', sans-serif; font-style: italic; letter-spacing: -1px; line-height: 1;">
+                <span style="color: var(--mx-blue); font-weight: 900;">MAAT</span><span style="color: var(--mx-red); font-weight: 400;">EXPRESS</span>
+            </div>
+            <p style="color: #64748b; font-weight: 600;">Internationaal Koeriersbedrijf</p>
+        </div>
+        <div class="card">
+            <h2>Welkom terug</h2>
+            <label>Wie ben je?</label>
             <select id="user-select">
                 <option value="Maarten de Klerk">Maarten de Klerk</option>
                 <option value="Bob">Bob</option>
                 <option value="Stef">Stef</option>
             </select>
-            <button class="btn-save" onclick="login()" style="background: var(--primary);">Inloggen</button>
+
+            <!-- VOEG DIT TOE: -->
+            <label>Wachtwoord</label>
+            <input type="password" id="password-input" placeholder="Vul je wachtwoord in">
+
+            <button class="btn-primary" style="margin-top: 20px;" onclick="login()">Inloggen</button>
         </div>
     </div>
 
+    <!-- INPUT -->
     <div id="view-input" class="container hidden">
-        <h2 id="welcome-msg">Hoi!</h2>
+        <h2 id="welcome-msg" style="padding-left: 10px;">Hoi!</h2>
         <div class="card">
             <label>Datum</label>
             <input type="date" id="datum_input">
+
             <div class="grid">
-                <div><label>Start Werk *</label><input type="time" id="w_start"></div>
-                <div><label>Eind Werk *</label><input type="time" id="w_eind"></div>
+                <div>
+                    <label>Start Werk</label>
+                    <input type="time" id="w_start" class="time-input">
+                </div>
+                <div>
+                    <label>Eind Werk</label>
+                    <input type="time" id="w_eind" class="time-input">
+                </div>
             </div>
-            <div style="margin-top:15px; background:#f9f9f9; padding:10px; border-radius:10px;">
-                <label style="margin:0; color:#666;">Standby (Optioneel)</label>
+            <div id="hours-preview" class="hours-badge hidden">Totaal: 0.00 uur</div>
+
+            <div style="margin-top:25px; padding-top:15px; border-top: 1px solid var(--border);">
+                <label style="color: var(--mx-blue);">Standby (Optioneel)</label>
                 <div class="grid">
                     <div><label>Vanaf</label><input type="time" id="s_start"></div>
                     <div><label>Tot</label><input type="time" id="s_eind"></div>
                 </div>
             </div>
-            <button class="btn-save" id="save-btn" onclick="saveData()">Zet in urenstaat</button>
+            <button class="btn-success" id="save-btn" onclick="saveData()" style="margin-top: 25px;">
+                <span>💾</span> Zet in urenstaat
+            </button>
         </div>
     </div>
 
+    <!-- EXPORT -->
     <div id="view-export" class="container hidden">
-        <h2>Export & Google Sheets</h2>
+        <h2>Export & Sync</h2>
         <div class="card">
             <label>Maand selecteren</label>
-            <select id="month-select">
-                <option value="0">Januari</option><option value="1">Februari</option>
-                <option value="2">Maart</option><option value="3">April</option>
-                <option value="4">Mei</option><option value="5">Juni</option>
-                <option value="6">Juli</option><option value="7">Augustus</option>
-                <option value="8">September</option><option value="9">Oktober</option>
-                <option value="10">November</option><option value="11">December</option>
-            </select>
+            <select id="month-select" style="margin-bottom: 20px;"></select>
 
-            <button class="btn-save" onclick="syncToGoogleSheets(this)" style="background: #4285F4; margin-bottom: 10px;">
-                Stuur naar Google Sheets
+            <button class="btn-primary" onclick="syncToGoogleSheets(this)" style="margin-bottom: 12px;">
+                <span>🚀</span> Stuur naar Google Sheets
             </button>
 
-            <button class="btn-save" onclick="clearSheet(this)" style="background: #dc3545; margin-top: 20px; font-size: 0.8rem;">
-                🗑️ Verse Google Sheet (Maak leeg)
+            <button class="btn-outline" onclick="downloadForExcel()" style="margin-bottom: 30px;">
+                <span>📊</span> Download CSV Backup
             </button>
 
-            <button class="btn-save" onclick="downloadForExcel()" style="background: #333; font-size: 0.8rem; padding: 10px;">
-                Download als losse CSV (backup)
+            <button class="btn-danger" onclick="clearSheet(this)">
+                <span>🗑️</span> Maak Sheet Leeg
             </button>
-
-            <p style="font-size:0.7rem; color:#666; margin-top:10px;">
-                Klik op de blauwe knop om alles direct in je Google Sheet te zetten.
-            </p>
         </div>
     </div>
-
 </div>
-<nav id="navbar" class="hidden">    <button onclick="showPage('input')">➕ Invoeren</button>
-    <button onclick="showPage('export')">📂 Download</button>
-    <button onclick="logout()">Uitloggen</button>
+
+<nav id="navbar" class="hidden">
+    <button onclick="showPage('input')" id="nav-input">
+        <span class="icon">➕</span> Invoeren
+    </button>
+    <button onclick="showPage('export')" id="nav-export">
+        <span class="icon">📂</span> Export
+    </button>
+    <button onclick="logout()">
+        <span class="icon">🚪</span> Uit
+    </button>
 </nav>
 
 <script>
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = "";
 
-    // Gebruik dit blok om de datum bij het laden in te vullen:
     window.onload = function() {
-        document.getElementById('datum_input').valueAsDate = new Date();
-        document.getElementById('month-select').value = new Date().getMonth();
-    };
-    // 2. De functie om uren naar Google Sheets te sturen
-    async function syncToGoogleSheets(btnElement) {
-        const scriptUrl = USER_SHEETS[currentUser];
-        if (!scriptUrl || scriptUrl.includes("DE_")) {
-            return alert("Fout: Geen Google Sheet gekoppeld aan " + currentUser);
-        }
-
-        const mIdx = document.getElementById('month-select').value;
-        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
-        const geselecteerdeMaandNaam = maanden[mIdx];
-
-        const oldText = btnElement.innerText;
-        btnElement.innerText = "Bezig...";
-        btnElement.style.opacity = "0.5";
-        btnElement.disabled = true;
-
-        // Haal data op uit Supabase voor de ingelogde gebruiker
-        const { data, error } = await supabaseClient.from('uren_registratie')
-            .select('*')
-            .eq('user_name', currentUser);
-
-        if (error) {
-            btnElement.innerText = oldText;
-            btnElement.style.opacity = "1";
-            btnElement.disabled = false;
-            return alert("Supabase fout: " + error.message);
-        }
-
-        // Filter uren van de geselecteerde maand
-        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
-
-        if (filtered.length === 0) {
-            btnElement.innerText = oldText;
-            btnElement.style.opacity = "1";
-            btnElement.disabled = false;
-            return alert("Geen uren gevonden voor " + geselecteerdeMaandNaam);
-        }
-
-        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
-            const datumObj = new Date(d.datum);
-            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
-            const berekenUren = (s, e) => {
-                if(!s || !e) return "0";
-                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
-                return diff.toFixed(2);
-            };
-
-            return {
-                maandNaam: geselecteerdeMaandNaam,
-                datum: d.datum,
-                dag: dagNaam,
-                werk_start: d.werk_start,
-                werk_eind: d.werk_eind,
-                wTotaal: berekenUren(d.werk_start, d.werk_eind),
-                sStart: d.stby_start || "",
-                sEind: d.stby_eind || "",
-                sTotaal: berekenUren(d.stby_start, d.stby_eind)
-            };
+        // Vul maanden dropdown
+        const months = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+        const select = document.getElementById('month-select');
+        months.forEach((m, i) => {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = m;
+            select.appendChild(opt);
         });
 
-        try {
-            await fetch(scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(rijenVoorGoogle)
-            });
-            alert("Sync voltooid voor " + currentUser + "!");
-        } catch (e) {
-            alert("Verbindingsfout met Google Sheets.");
-        }
+        document.getElementById('datum_input').valueAsDate = new Date();
+        document.getElementById('month-select').value = new Date().getMonth();
 
-        btnElement.innerText = oldText;
-        btnElement.style.opacity = "1";
-        btnElement.disabled = false;
+        // Real-time uren teller
+        document.querySelectorAll('.time-input').forEach(el => {
+            el.addEventListener('change', calculatePreview);
+        });
+    };
+
+    function notify(msg, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.style.background = type === 'error' ? '#bd0926' : '#1e293b';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    function login() {
-        currentUser = document.getElementById('user-select').value;
-        document.getElementById('welcome-msg').innerText = "Hoi " + currentUser;
-        document.getElementById('navbar').classList.remove('hidden');
-        showPage('input');
+    function calculatePreview() {
+        const s = document.getElementById('w_start').value;
+        const e = document.getElementById('w_eind').value;
+        const badge = document.getElementById('hours-preview');
+
+        if(s && e) {
+            const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 3600000;
+            if(diff > 0) {
+                badge.innerText = `Totaal: ${diff.toFixed(2)} uur`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.innerText = "Eindtijd moet na starttijd liggen";
+                badge.classList.remove('hidden');
+            }
+        }
     }
 
     function showPage(id) {
-        // Verberg alle containers
         document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
-        // Toon de juiste container
         document.getElementById('view-' + id).classList.remove('hidden');
-
-        // Update de navigatie knoppen
-        document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-        // Zoek de knop die bij deze pagina hoort (bijv. de knop met 'Invoeren' voor id 'input')
-        const navButtons = document.querySelectorAll('nav button');
-        if (id === 'input') navButtons[0].classList.add('active');
-        if (id === 'export') navButtons[1].classList.add('active');
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById('nav-' + id)?.classList.add('active');
     }
-
-
-
-    function logout() {
-        document.getElementById('navbar').classList.add('hidden');
-        showPage('login');
-    }
-
 
     async function saveData() {
         const data = {
@@ -219,91 +310,108 @@
             stby_eind: document.getElementById('s_eind').value || null
         };
 
-        if(!data.werk_start || !data.werk_eind) return alert("Werk-tijden zijn verplicht!");
+        if(!data.werk_start || !data.werk_eind) return notify("Vul de werktijden in!", "error");
+
+        const diff = (new Date(`1970-01-01T${data.werk_eind}`) - new Date(`1970-01-01T${data.werk_start}`));
+        if(diff <= 0) return notify("Eindtijd moet na begintijd liggen!", "error");
 
         const btn = document.getElementById('save-btn');
-        btn.innerText = "Bezig...";
+        btn.disabled = true;
 
-        // Gebruik hier ook 'supabaseClient'
         const { error } = await supabaseClient.from('uren_registratie').insert([data]);
 
         if (error) {
-            alert("Fout bij opslaan: " + error.message);
+            notify("Fout: " + error.message, "error");
         } else {
-            alert("Opgeslagen in database!");
+            notify("Uren opgeslagen in database!");
             document.getElementById('w_start').value = "";
             document.getElementById('w_eind').value = "";
             document.getElementById('s_start').value = "";
             document.getElementById('s_eind').value = "";
+            document.getElementById('hours-preview').classList.add('hidden');
         }
-        btn.innerText = "Zet in urenstaat";
+        btn.disabled = false;
     }
 
-    async function downloadForExcel() {
+    async function syncToGoogleSheets(btn) {
+        const scriptUrl = USER_SHEETS[currentUser];
         const mIdx = document.getElementById('month-select').value;
-        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+        const oldText = btn.innerHTML;
 
-        // Gebruik hier ook 'supabaseClient'
-        const { data, error } = await supabaseClient.from('uren_registratie')
-            .select('*')
-            .eq('user_name', currentUser);
+        btn.disabled = true;
+        btn.innerHTML = "Laden...";
 
-        if (error) return alert("Fout bij ophalen: " + error.message);
-
+        const { data, error } = await supabaseClient.from('uren_registratie').select('*').eq('user_name', currentUser);
         const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
 
-        let csv = "Datum;Dag;Starttijd;Eindtijd;Pauze;Totaal uren;Standby van;Standby tot;Totaal Standby\n";
-
-        filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).forEach(d => {
-            const datumObj = new Date(d.datum);
-            const dagNaam = datumObj.toLocaleDateString('nl-NL', {weekday: 'long'});
-
-            const berekenUren = (s, e) => {
-                if(!s || !e) return "0";
-                const diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 1000 / 60 / 60;
-                return diff.toFixed(2).replace('.', ',');
-            };
-
-            csv += `${d.datum};${dagNaam};${d.werk_start};${d.werk_eind};0;${berekenUren(d.werk_start, d.werk_eind)};${d.stby_start || ''};${d.stby_eind || ''};${berekenUren(d.stby_start, d.stby_eind)}\n`;
-        });
-
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `Urenstaat_${currentUser.replace(' ', '_')}_${maanden[mIdx]}_2026.csv`;
-        link.click();
-    }
-    async function clearSheet(btnElement) {
-        const scriptUrl = USER_SHEETS[currentUser]; // Gebruik de URL van de gebruiker
-        if (!scriptUrl || scriptUrl.includes("DE_")) return alert("Geen sheet gekoppeld.");
-
-        if (!confirm("Weet je zeker dat je de Google Sheet van " + currentUser + " wilt leegmaken?")) return;
-
-        const mIdx = document.getElementById('month-select').value;
-        const maanden = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
-
-        btnElement.innerText = "Bezig met wissen...";
-        btnElement.disabled = true;
-
-        try {
-            await fetch(scriptUrl, { // Gebruik scriptUrl in plaats van GOOGLE_SCRIPT_URL
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    action: "clear",
-                    maandNaam: maanden[mIdx]
-                })
-            });
-            alert("De Google Sheet is nu leeg!");
-        } catch (e) {
-            alert("Er ging iets mis bij het wissen.");
+        if (filtered.length === 0) {
+            btn.disabled = false;
+            btn.innerHTML = oldText;
+            return notify("Geen uren gevonden voor deze maand.", "error");
         }
 
-        btnElement.innerText = "🗑️ Wis Google Sheet (Maak leeg)";
-        btnElement.disabled = false;
+        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
+            const datumObj = new Date(d.datum);
+            const bereken = (s, e) => s && e ? ((new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 3600000).toFixed(2) : "0";
+            return {
+                maandNaam: document.getElementById('month-select').options[mIdx].text,
+                datum: d.datum,
+                dag: datumObj.toLocaleDateString('nl-NL', {weekday: 'long'}),
+                werk_start: d.werk_start,
+                werk_eind: d.werk_eind,
+                wTotaal: bereken(d.werk_start, d.werk_eind),
+                sStart: d.stby_start || "",
+                sEind: d.stby_eind || "",
+                sTotaal: bereken(d.stby_start, d.stby_eind)
+            };
+        });
+
+        try {
+            await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(rijenVoorGoogle) });
+            notify("Succesvol gesynchroniseerd!");
+        } catch (e) {
+            notify("Fout bij verzenden naar Google", "error");
+        }
+        btn.disabled = false;
+        btn.innerHTML = oldText;
+    }
+
+    async function clearSheet(btn) {
+        if (!confirm("Google Sheet van deze maand leegmaken?")) return;
+        const scriptUrl = USER_SHEETS[currentUser];
+        const mName = document.getElementById('month-select').options[document.getElementById('month-select').value].text;
+
+        notify("Bezig met wissen...");
+        try {
+            await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear", maandNaam: mName }) });
+            notify("Google Sheet is nu leeg.");
+        } catch (e) {
+            notify("Fout bij wissen", "error");
+        }
+    }
+
+    function logout() { location.reload(); }
+    function login() {
+        const selectedUser = document.getElementById('user-select').value;
+        const enteredPass = document.getElementById('password-input').value;
+
+        // We checken of het wachtwoord bestaat in onze config
+        const correctPass = USER_PASSWORDS[selectedUser];
+
+        if (enteredPass === correctPass) {
+            currentUser = selectedUser;
+            document.getElementById('welcome-msg').innerText = "Hoi " + currentUser.split(' ')[0];
+            document.getElementById('navbar').classList.remove('hidden');
+            showPage('input');
+            notify("Welkom " + currentUser);
+
+            // Maak het veld leeg voor de veiligheid
+            document.getElementById('password-input').value = "";
+        } else {
+            notify("Onjuist wachtwoord!", "error");
+            document.getElementById('password-input').value = "";
+        }
     }
 </script>
-
 </body>
 </html>
