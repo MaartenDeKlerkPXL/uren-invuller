@@ -15,6 +15,12 @@
             --text: #1e293b;
             --border: #e2e8f0;
         }
+        /* Zoek je bestaande .hidden regel en plak dit eronder: */
+        .hidden { display: none; }
+
+        #edit-overlay:not(.hidden) {
+            display: flex;
+        }
 
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -123,7 +129,15 @@
 <body>
 
 <div id="toast">Bericht</div>
-
+<!-- Bewerken/Verwijderen Overlay -->
+<div id="edit-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center; backdrop-filter: blur(4px);">    <div class="card" style="width: 80%; max-width: 350px; text-align: center;">
+        <h2 id="edit-title">Rit aanpassen</h2>
+        <p id="edit-details" style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;"></p>
+        <button class="btn-primary" onclick="prepareEdit()" style="margin-bottom: 10px;">✏️ Aanpassen</button>
+        <button class="btn-danger" onclick="deleteRecord()" style="margin-bottom: 10px; border: 2px solid var(--mx-red); color: var(--mx-red);">🗑️ Verwijderen</button>
+        <button class="btn-outline" onclick="closeOverlay()" style="border:none;">Annuleren</button>
+    </div>
+</div>
 <div id="app">
     <!-- LOGIN -->
     <div id="view-login" class="container">
@@ -216,6 +230,8 @@
 <script>
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = "";
+    let selectedRecord = null; // Houdt de rit vast die je aanklikt
+    let isEditing = false;     // Om te weten of we een nieuwe rit opslaan of een oude updaten
 
     window.onload = function() {
         // Maanden vullen
@@ -305,14 +321,14 @@
         if (error) return list.innerHTML = "Fout bij laden.";
 
         list.innerHTML = data.map(d => `
-            <div class="history-item">
-                <div>
-                    <div style="font-weight:bold;">${d.datum.split('-').reverse().join('-')}</div>
-                    <div style="font-size:0.75rem; color:#64748b;">${d.werk_start} - ${d.werk_eind}</div>
-                </div>
-                ${d.stby_start ? `<span style="font-size:0.7rem; background:#e2e8f0; padding:2px 6px; border-radius:4px;">Standby</span>` : ''}
+        <div class="history-item" onclick='openEditOverlay(${JSON.stringify(d)})' style="cursor:pointer;">
+            <div>
+                <div style="font-weight:bold;">${d.datum.split('-').reverse().join('-')}</div>
+                <div style="font-size:0.75rem; color:#64748b;">${d.werk_start} - ${d.werk_eind}</div>
             </div>
-        `).join('') || "Nog geen ritten gevonden.";
+            <span style="color: var(--mx-blue);">➔</span>
+        </div>
+    `).join('') || "Nog geen ritten gevonden.";
     }
 
     async function saveData() {
@@ -332,21 +348,48 @@
         btn.disabled = true;
         spinner.style.display = "block";
 
-        const { error } = await supabaseClient.from('uren_registratie').insert([data]);
+        // We kijken eerst of er al een rit bestaat voor deze gebruiker op deze datum
+        const { data: existing } = await supabaseClient
+            .from('uren_registratie')
+            .select('id')
+            .eq('user_name', currentUser)
+            .eq('datum', data.datum)
+            .maybeSingle();
 
-        if (!error) {
-            notify("✅ Rit succesvol opgeslagen!");
-            document.getElementById('w_start').value = "";
-            document.getElementById('w_eind').value = "";
-            document.getElementById('s_start').value = "";
-            document.getElementById('s_eind').value = "";
-            document.getElementById('hours-preview').classList.add('hidden');
+        let result;
+        if (existing) {
+            // Als er al een rit is (of we zijn aan het editen), UPDATEN we de oude
+            result = await supabaseClient
+                .from('uren_registratie')
+                .update(data)
+                .eq('id', existing.id);
+        } else {
+            // Als er echt nog niks is, VOEGEN we hem toe
+            result = await supabaseClient.from('uren_registratie').insert([data]);
+        }
+
+        if (!result.error) {
+            notify(isEditing ? "✅ Rit bijgewerkt!" : "✅ Rit opgeslagen!");
+            resetForm(); // Maak formulier leeg en zet modus terug
             fetchHistory();
         } else {
-            notify("Fout: " + error.message, "error");
+            notify("Fout: " + result.error.message, "error");
         }
         btn.disabled = false;
         spinner.style.display = "none";
+    }
+
+    // Hulpfunctie om alles te resetten na aanpassen of opslaan
+    function resetForm() {
+        isEditing = false;
+        selectedRecord = null;
+        document.getElementById('w_start').value = "";
+        document.getElementById('w_eind').value = "";
+        document.getElementById('s_start').value = "";
+        document.getElementById('s_eind').value = "";
+        document.getElementById('hours-preview').classList.add('hidden');
+        document.getElementById('save-btn').querySelector('span').innerText = "💾 Zet in urenstaat";
+        document.getElementById('save-btn').classList.replace('btn-primary', 'btn-success');
     }
 
     async function syncToGoogleSheets(btn) {
@@ -373,8 +416,7 @@
         const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
             const getDiff = (s, e) => {
                 if(!s || !e) return "0";
-                let diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${start}`)) / 3600000;
-                return (diff < 0 ? diff + 24 : diff).toFixed(2);
+                let diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 3600000;                return (diff < 0 ? diff + 24 : diff).toFixed(2);
             };
             return {
                 maandNaam: document.getElementById('month-select').options[mIdx].text,
@@ -432,6 +474,53 @@
     function logout() {
         localStorage.removeItem('mx_user');
         location.reload();
+    }
+    function openEditOverlay(record) {
+        selectedRecord = record;
+        document.getElementById('edit-details').innerText = `Rit op ${record.datum}`;
+        document.getElementById('edit-overlay').classList.remove('hidden');
+    }
+
+    function closeOverlay() {
+        document.getElementById('edit-overlay').classList.add('hidden');
+        selectedRecord = null;
+    }
+
+    // Zet de gegevens van de geselecteerde rit terug in het formulier
+    function prepareEdit() {
+        isEditing = true;
+        const d = selectedRecord;
+        document.getElementById('datum_input').value = d.datum;
+        document.getElementById('w_start').value = d.werk_start;
+        document.getElementById('w_eind').value = d.werk_eind;
+        document.getElementById('s_start').value = d.stby_start || "";
+        document.getElementById('s_eind').value = d.stby_eind || "";
+
+        // Verander de knop-tekst zodat je ziet dat je aanpast
+        document.getElementById('save-btn').querySelector('span').innerText = "Update Rit";
+        document.getElementById('save-btn').classList.replace('btn-success', 'btn-primary');
+
+        calculatePreview();
+        closeOverlay();
+        notify("Je kunt de rit nu aanpassen");
+    }
+
+    // Verwijder de rit uit Supabase
+    async function deleteRecord() {
+        if (!confirm("Weet je zeker dat je deze rit wilt verwijderen?")) return;
+
+        const { error } = await supabaseClient
+            .from('uren_registratie')
+            .delete()
+            .eq('id', selectedRecord.id);
+
+        if (!error) {
+            notify("Rit verwijderd");
+            fetchHistory();
+            closeOverlay();
+        } else {
+            notify("Fout bij verwijderen", "error");
+        }
     }
 </script>
 </body>
