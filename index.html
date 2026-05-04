@@ -5,523 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Maatexpress Urenregistratie</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <style>
-        :root {
-            --mx-blue: #0e72b5;
-            --mx-red: #bd0926;
-            --bg: #ffffff;
-            --card-bg: #f8fafc;
-            --text: #1e293b;
-            --border: #e2e8f0;
-        }
-        /* Zoek je bestaande .hidden regel en plak dit eronder: */
-        .hidden { display: none; }
-
-        #edit-overlay:not(.hidden) {
-            display: flex;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding-bottom: 90px;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .container { padding: 20px; max-width: 480px; margin: auto; }
-
-        .card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        h2 { margin: 0 0 20px 0; font-size: 1.4rem; color: var(--mx-blue); font-weight: 800; }
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        input, select {
-            width: 100%;
-            padding: 14px;
-            margin-top: 6px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            background: white;
-        }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
-        /* Buttons & Spinners */
-        button {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-primary { background: var(--mx-blue); color: white; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-danger { background: white; color: var(--mx-red); border: 2px solid var(--mx-red); }
-
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Navigatie */
-        nav {
-            position: fixed; bottom: 20px; left: 20px; right: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex; border-radius: 20px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-            border: 1px solid var(--border);
-            height: 75px; z-index: 1000;
-        }
-
-        nav button { flex: 1; background: none; color: #94a3b8; border: none; font-size: 0.75rem; flex-direction: column; gap: 5px; }
-        nav button.active { color: var(--mx-blue); }
-        .nav-icon { font-size: 1.2rem; }
-
-        /* Geschiedenis */
-        .history-item {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-        .history-item:last-child { border-bottom: none; }
-
-        #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px;
-            transition: transform 0.4s; z-index: 2000;
-        }
-        #toast.show { transform: translateX(-50%) translateY(0); }
-
-        .hidden { display: none; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function(){
+            emailjs.init("BKNOFZ05gMJ_VtcsV");
+        })();
+    </script>
 </head>
 <body>
 
 <div id="toast">Bericht</div>
-<!-- Bewerken/Verwijderen Overlay -->
-<div id="edit-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center; backdrop-filter: blur(4px);">    <div class="card" style="width: 80%; max-width: 350px; text-align: center;">
+
+<div id="edit-overlay" class="hidden">
+    <div class="card modal-card">
         <h2 id="edit-title">Rit aanpassen</h2>
-        <p id="edit-details" style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;"></p>
-        <button class="btn-primary" onclick="prepareEdit()" style="margin-bottom: 10px;">✏️ Aanpassen</button>
-        <button class="btn-danger" onclick="deleteRecord()" style="margin-bottom: 10px; border: 2px solid var(--mx-red); color: var(--mx-red);">🗑️ Verwijderen</button>
-        <button class="btn-outline" onclick="closeOverlay()" style="border:none;">Annuleren</button>
+        <p id="edit-details"></p>
+        <button class="btn-primary" style="margin-top: 2rem" onclick="prepareEdit()">✏️ Aanpassen</button>
+        <button class="btn-danger" style="margin-top: 1rem" onclick="deleteRecord()">🗑️ Verwijderen</button>
+        <button class="btn-outline" style="margin-top: 1rem" onclick="closeOverlay()">Annuleren</button>
     </div>
 </div>
+
 <div id="app">
-    <!-- LOGIN -->
-    <div id="view-login" class="container">
-        <div style="text-align: center; margin: 60px 0 30px;">
-            <div style="font-size: 3rem; font-family: 'Myriad Pro', sans-serif; font-style: italic; letter-spacing: -1px; line-height: 1;">
-                <span style="color: var(--mx-blue); font-weight: 900;">MAAT</span><span style="color: var(--mx-red); font-weight: 400;">EXPRESS</span>
-            </div>
-            <p style="color: #64748b; font-weight: 600;">Internationaal Koeriersbedrijf</p>
-        </div>
-        <div class="card">
+    <!-- LOGIN VIEW -->
+    <img src="Maatexpress logo.png"
+         alt="logo maatexpress"
+         height="auto"
+         width="600"
+         style="display: block; margin: 0 auto;"/><div id="view-login" class="container">
+                <div class="card">
             <h2>Welkom</h2>
             <label>Wie ben je?</label>
             <select id="user-select">
+                <option value="Stephan van Deurse">Stephan van Deurse</option>
                 <option value="Maarten de Klerk">Maarten de Klerk</option>
-                <option value="Bob">Bob</option>
-                <option value="Stef">Stef</option>
+                <option value="Bob Klaasen">Bob Klaasen</option>
+                <option value="Stef Pieters">Stef Pieters</option>
             </select>
             <label>Wachtwoord</label>
             <input type="password" id="password-input" placeholder="Wachtwoord">
-            <button class="btn-primary" style="margin-top: 20px;" onclick="login()">
+            <button class="btn-link" onclick="forgotPassword()">Wachtwoord vergeten?</button>
+            <button class="btn-primary" onclick="login()">
                 <div class="spinner" id="login-spinner"></div>
                 <span>Inloggen</span>
             </button>
         </div>
     </div>
 
-    <!-- INPUT -->
+    <!-- INPUT VIEW -->
     <div id="view-input" class="container hidden">
         <h2 id="welcome-msg">Hoi!</h2>
         <div class="card">
             <label>Datum</label>
             <input type="date" id="datum_input">
-
             <div class="grid">
                 <div><label>Start Werk</label><input type="time" id="w_start" class="time-input"></div>
                 <div><label>Eind Werk</label><input type="time" id="w_eind" class="time-input"></div>
             </div>
-
-            <div style="margin-top:20px; padding-top:15px; border-top: 1px solid var(--border);">
-                <label style="color: var(--mx-blue);">Standby (Optioneel)</label>
+            <div class="standby-section">
+                <label class="label-blue">Standby (Optioneel)</label>
                 <div class="grid">
                     <div><label>Vanaf</label><input type="time" id="s_start" class="time-input"></div>
                     <div><label>Tot</label><input type="time" id="s_eind" class="time-input"></div>
                 </div>
             </div>
-
-            <div id="hours-preview" style="background: var(--mx-blue); color:white; padding:8px 15px; border-radius:12px; margin-top:20px; font-weight:bold; font-size:0.9rem;" class="hidden"></div>
-
-            <button class="btn-success" id="save-btn" onclick="saveData()" style="margin-top: 20px;">
+            <div id="hours-preview" class="hidden"></div>
+            <button class="btn-success" id="save-btn" onclick="saveData()">
                 <div class="spinner" id="save-spinner"></div>
                 <span>💾 Zet in urenstaat</span>
             </button>
         </div>
-
         <div class="card">
-            <h3 style="font-size: 1rem; margin-top: 0; color: var(--mx-blue);">Laatste ritten</h3>
+            <h3 class="card-title-blue">Laatste ritten</h3>
             <div id="history-list">Laden...</div>
         </div>
     </div>
 
-    <!-- EXPORT -->
+    <!-- ADMIN VIEW -->
+    <div id="view-admin" class="container hidden">
+        <div class="logo-header">
+            <h2 style="margin-bottom: 0;">Beheerder Paneel</h2>
+            <p>Welkom Stephan</p>
+        </div>
+
+        <div class="card">
+            <label>Maand voor alle chauffeurs</label>
+            <select id="admin-month-select"></select>
+            <button style="margin-top: 1rem" class="btn-primary" onclick="adminAction('sync')">
+                <span>🚀 Synchroniseer IEDEREEN</span>
+            </button>
+            <button class="btn-danger-outline" onclick="adminAction('clear')">
+                <span>🗑️</span> Maak ALLE Sheets Leeg
+            </button>
+        </div>
+
+        <!-- Deze sectie is nu even breed als de rest en alleen in dit view (Stephan) -->
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3 class="card-title-blue">👥 Chauffeur Toevoegen</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                    <label>Volledige Naam</label>
+                    <input type="text" id="new-driver-name" placeholder="bijv. Bob Klaasen">
+                </div>
+                <div>
+                    <label>E-mailadres</label>
+                    <input type="email" id="new-driver-email" placeholder="bijv. bob@maatexpress.nl">
+                </div>
+                <div>
+                    <label>Google Sheet URL (/exec link)</label>
+                    <input type="text" id="new-driver-sheet" placeholder="https://script.google.com/...">
+                </div>
+                <button class="btn-success" onclick="addDriver()" style="margin-top: 5px;">
+                    <span>➕</span> Voeg Chauffeur Toe
+                </button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3 class="card-title-blue">Huidige Chauffeurs</h3>
+            <div id="admin-driver-list">Laden...</div>
+        </div>
+    </div>
+    <!-- EXPORT VIEW -->
     <div id="view-export" class="container hidden">
         <h2>Export & Sync</h2>
         <div class="card">
+            <label>Chauffeur selecteren</label>
+            <select id="export-user-select"></select>
             <label>Maand selecteren</label>
             <select id="month-select"></select>
-            <button class="btn-primary" onclick="syncToGoogleSheets(this)" style="margin-top: 20px;">
-                <div class="spinner"></div>
+            <button style="margin-top: 1rem" class="btn-primary" onclick="syncToGoogleSheets(this)">
+                <div class="spinner" id="sync-spinner"></div>
                 <span>🚀 Synchroniseer Google Sheets</span>
             </button>
-            <button class="btn-danger" onclick="clearSheet(this)" style="margin-top: 30px;">
+            <button class="btn-danger-large" onclick="clearSheet(this)">
                 <span>🗑️</span> Maak Sheet Leeg
             </button>
         </div>
     </div>
+
+    <!-- RESET VIEW -->
+    <div id="view-reset" class="container hidden">
+        <h2>Nieuw Wachtwoord</h2>
+        <div class="card">
+            <p id="reset-user-text">Hoi, kies een nieuw wachtwoord.</p>
+            <label>Nieuw Wachtwoord</label>
+            <input type="password" id="new-password-input" placeholder="Minimaal 4 tekens">
+            <button class="btn-primary" onclick="confirmNewPassword()" style="margin-top: 20px;">
+                <span>🔐</span> Wachtwoord Opslaan
+            </button>
+            <!-- Verander location.reload() naar dit: -->
+            <button class="btn-link" onclick="window.location.href = window.location.pathname;">
+                Terug naar inloggen
+            </button>        </div>
+    </div>
 </div>
 
 <nav id="navbar" class="hidden">
-    <button onclick="showPage('input')" id="nav-input" class="active">
-        <span class="nav-icon">➕</span> Invoeren
-    </button>
-    <button onclick="showPage('export')" id="nav-export">
-        <span class="nav-icon">📂</span> Export
-    </button>
-    <button onclick="logout()">
-        <span class="nav-icon">🚪</span> Uitloggen
-    </button>
+    <button onclick="showPage('input')" id="nav-input"><span class="nav-icon">➕</span> Invoeren</button>
+    <button onclick="showPage('admin')" id="nav-admin" class="hidden"><span class="nav-icon">⚙️</span> Beheer</button>
+    <button onclick="showPage('export')" id="nav-export"><span class="nav-icon">📂</span> Export</button>
+    <button onclick="logout()"><span class="nav-icon">🚪</span> Uitloggen</button>
 </nav>
-
-<script>
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let currentUser = "";
-    let selectedRecord = null; // Houdt de rit vast die je aanklikt
-    let isEditing = false;     // Om te weten of we een nieuwe rit opslaan of een oude updaten
-
-    window.onload = function() {
-        // Maanden vullen
-        const months = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
-        const mSelect = document.getElementById('month-select');
-        months.forEach((m, i) => {
-            let opt = document.createElement('option');
-            opt.value = i; opt.innerHTML = m;
-            mSelect.appendChild(opt);
-        });
-
-        // AUTO-LOGIN
-        const savedUser = localStorage.getItem('mx_user');
-        if (savedUser) {
-            currentUser = savedUser;
-            document.getElementById('welcome-msg').innerText = "Hoi " + currentUser.split(' ')[0];
-            document.getElementById('navbar').classList.remove('hidden');
-            showPage('input');
-            fetchHistory();
-        }
-
-        document.getElementById('datum_input').valueAsDate = new Date();
-        document.getElementById('month-select').value = new Date().getMonth();
-
-        // Listeners voor Preview
-        document.querySelectorAll('.time-input').forEach(el => el.addEventListener('change', calculatePreview));
-        document.getElementById('password-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') login(); });
-    };
-
-    function calculatePreview() {
-        const ws = document.getElementById('w_start').value;
-        const we = document.getElementById('w_eind').value;
-        const ss = document.getElementById('s_start').value;
-        const se = document.getElementById('s_eind').value;
-        const badge = document.getElementById('hours-preview');
-
-        const getDiff = (start, eind) => {
-            if(!start || !eind) return 0;
-            let d = (new Date(`1970-01-01T${eind}`) - new Date(`1970-01-01T${start}`)) / 3600000;
-            return d < 0 ? d + 24 : d;
-        };
-
-        const wUren = getDiff(ws, we);
-        const sUren = getDiff(ss, se);
-
-        if(wUren > 0 || sUren > 0) {
-            badge.innerHTML = `Werk: ${wUren.toFixed(2)}u` + (sUren > 0 ? ` | Standby: ${sUren.toFixed(2)}u` : '');
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-    }
-
-    function login() {
-        const user = document.getElementById('user-select').value;
-        const pass = document.getElementById('password-input').value;
-        const spinner = document.getElementById('login-spinner');
-
-        if (pass === USER_PASSWORDS[user]) {
-            spinner.style.display = "block";
-            currentUser = user;
-            localStorage.setItem('mx_user', user);
-
-            setTimeout(() => {
-                document.getElementById('welcome-msg').innerText = "Hoi " + currentUser.split(' ')[0];
-                document.getElementById('navbar').classList.remove('hidden');
-                showPage('input');
-                fetchHistory();
-                notify("Welkom " + currentUser.split(' ')[0]);
-                spinner.style.display = "none";
-                document.getElementById('password-input').value = "";
-            }, 600);
-        } else {
-            notify("Wachtwoord onjuist", "error");
-        }
-    }
-
-    async function fetchHistory() {
-        const list = document.getElementById('history-list');
-        const { data, error } = await supabaseClient
-            .from('uren_registratie')
-            .select('*')
-            .eq('user_name', currentUser)
-            .order('datum', { ascending: false })
-            .limit(5);
-
-        if (error) return list.innerHTML = "Fout bij laden.";
-
-        list.innerHTML = data.map(d => `
-        <div class="history-item" onclick='openEditOverlay(${JSON.stringify(d)})' style="cursor:pointer;">
-            <div>
-                <div style="font-weight:bold;">${d.datum.split('-').reverse().join('-')}</div>
-                <div style="font-size:0.75rem; color:#64748b;">${d.werk_start} - ${d.werk_eind}</div>
-            </div>
-            <span style="color: var(--mx-blue);">➔</span>
-        </div>
-    `).join('') || "Nog geen ritten gevonden.";
-    }
-
-    async function saveData() {
-        const data = {
-            user_name: currentUser,
-            datum: document.getElementById('datum_input').value,
-            werk_start: document.getElementById('w_start').value,
-            werk_eind: document.getElementById('w_eind').value,
-            stby_start: document.getElementById('s_start').value || null,
-            stby_eind: document.getElementById('s_eind').value || null
-        };
-
-        if(!data.werk_start || !data.werk_eind) return notify("Vul werktijden in", "error");
-
-        const btn = document.getElementById('save-btn');
-        const spinner = document.getElementById('save-spinner');
-        btn.disabled = true;
-        spinner.style.display = "block";
-
-        // We kijken eerst of er al een rit bestaat voor deze gebruiker op deze datum
-        const { data: existing } = await supabaseClient
-            .from('uren_registratie')
-            .select('id')
-            .eq('user_name', currentUser)
-            .eq('datum', data.datum)
-            .maybeSingle();
-
-        let result;
-        if (existing) {
-            // Als er al een rit is (of we zijn aan het editen), UPDATEN we de oude
-            result = await supabaseClient
-                .from('uren_registratie')
-                .update(data)
-                .eq('id', existing.id);
-        } else {
-            // Als er echt nog niks is, VOEGEN we hem toe
-            result = await supabaseClient.from('uren_registratie').insert([data]);
-        }
-
-        if (!result.error) {
-            notify(isEditing ? "✅ Rit bijgewerkt!" : "✅ Rit opgeslagen!");
-            resetForm(); // Maak formulier leeg en zet modus terug
-            fetchHistory();
-        } else {
-            notify("Fout: " + result.error.message, "error");
-        }
-        btn.disabled = false;
-        spinner.style.display = "none";
-    }
-
-    // Hulpfunctie om alles te resetten na aanpassen of opslaan
-    function resetForm() {
-        isEditing = false;
-        selectedRecord = null;
-        document.getElementById('w_start').value = "";
-        document.getElementById('w_eind').value = "";
-        document.getElementById('s_start').value = "";
-        document.getElementById('s_eind').value = "";
-        document.getElementById('hours-preview').classList.add('hidden');
-        document.getElementById('save-btn').querySelector('span').innerText = "💾 Zet in urenstaat";
-        document.getElementById('save-btn').classList.replace('btn-primary', 'btn-success');
-    }
-
-    async function syncToGoogleSheets(btn) {
-        const scriptUrl = USER_SHEETS[currentUser];
-        const mIdx = document.getElementById('month-select').value;
-        const spinner = btn.querySelector('.spinner');
-        const oldText = btn.querySelector('span').innerText;
-
-        btn.disabled = true;
-        spinner.style.display = "block";
-        btn.querySelector('span').innerText = "Bezig...";
-
-        const { data, error } = await supabaseClient.from('uren_registratie').select('*').eq('user_name', currentUser);
-        const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
-
-        if (filtered.length === 0) {
-            notify("Geen uren gevonden voor deze maand.", "error");
-            btn.disabled = false;
-            spinner.style.display = "none";
-            btn.querySelector('span').innerText = oldText;
-            return;
-        }
-
-        const rijenVoorGoogle = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => {
-            const getDiff = (s, e) => {
-                if(!s || !e) return "0";
-                let diff = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 3600000;                return (diff < 0 ? diff + 24 : diff).toFixed(2);
-            };
-            return {
-                maandNaam: document.getElementById('month-select').options[mIdx].text,
-                datum: d.datum,
-                dag: new Date(d.datum).toLocaleDateString('nl-NL', {weekday: 'long'}),
-                werk_start: d.werk_start,
-                werk_eind: d.werk_eind,
-                wTotaal: "", // Google Sheets MOD formule rekent dit uit
-                sStart: d.stby_start || "",
-                sEind: d.stby_eind || "",
-                sTotaal: ""
-            };
-        });
-
-        try {
-            await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(rijenVoorGoogle) });
-            notify("Alles staat in Google Sheets!");
-        } catch (e) {
-            notify("Verbindingsfout", "error");
-        }
-        btn.disabled = false;
-        spinner.style.display = "none";
-        btn.querySelector('span').innerText = oldText;
-    }
-
-    async function clearSheet(btn) {
-        if (!confirm("Maand leegmaken in Google Sheets?")) return;
-        const scriptUrl = USER_SHEETS[currentUser];
-        const mName = document.getElementById('month-select').options[document.getElementById('month-select').value].text;
-
-        notify("Sheet wordt geleegd...");
-        try {
-            await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear", maandNaam: mName }) });
-            notify("Google Sheet is leeg.");
-        } catch (e) {
-            notify("Fout bij wissen", "error");
-        }
-    }
-
-    function showPage(id) {
-        document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
-        document.getElementById('view-' + id).classList.remove('hidden');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById('nav-' + id)?.classList.add('active');
-    }
-
-    function notify(msg, type = 'success') {
-        const toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.style.background = type === 'error' ? 'var(--mx-red)' : '#1e293b';
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    function logout() {
-        localStorage.removeItem('mx_user');
-        location.reload();
-    }
-    function openEditOverlay(record) {
-        selectedRecord = record;
-        document.getElementById('edit-details').innerText = `Rit op ${record.datum}`;
-        document.getElementById('edit-overlay').classList.remove('hidden');
-    }
-
-    function closeOverlay() {
-        document.getElementById('edit-overlay').classList.add('hidden');
-        selectedRecord = null;
-    }
-
-    // Zet de gegevens van de geselecteerde rit terug in het formulier
-    function prepareEdit() {
-        isEditing = true;
-        const d = selectedRecord;
-        document.getElementById('datum_input').value = d.datum;
-        document.getElementById('w_start').value = d.werk_start;
-        document.getElementById('w_eind').value = d.werk_eind;
-        document.getElementById('s_start').value = d.stby_start || "";
-        document.getElementById('s_eind').value = d.stby_eind || "";
-
-        // Verander de knop-tekst zodat je ziet dat je aanpast
-        document.getElementById('save-btn').querySelector('span').innerText = "Update Rit";
-        document.getElementById('save-btn').classList.replace('btn-success', 'btn-primary');
-
-        calculatePreview();
-        closeOverlay();
-        notify("Je kunt de rit nu aanpassen");
-    }
-
-    // Verwijder de rit uit Supabase
-    async function deleteRecord() {
-        if (!confirm("Weet je zeker dat je deze rit wilt verwijderen?")) return;
-
-        const { error } = await supabaseClient
-            .from('uren_registratie')
-            .delete()
-            .eq('id', selectedRecord.id);
-
-        if (!error) {
-            notify("Rit verwijderd");
-            fetchHistory();
-            closeOverlay();
-        } else {
-            notify("Fout bij verwijderen", "error");
-        }
-    }
-</script>
+<footer class="main-footer">
+    <p>Vragen? Mail Stephan: info@maatexpress.eu</p>
+    <p class="footer-credit">Gemaakt door collega Maarten de Klerk</p>
+</footer>
+<script src="config.js"></script>
+<script src="index.js"></script>
 </body>
 </html>

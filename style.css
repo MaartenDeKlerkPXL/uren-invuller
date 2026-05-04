@@ -1,0 +1,177 @@
+:root {
+    --mx-blue: #0e72b5;
+    --mx-red: #bd0926;
+    --bg: #ffffff;
+    --card-bg: #f8fafc;
+    --text: #1e293b;
+    --border: #e2e8f0;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding-bottom: 90px;
+    -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+#edit-overlay {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.5); z-index:3000;
+    align-items:center; justify-content:center; backdrop-filter: blur(4px);
+}
+#edit-overlay:not(.hidden) { display: flex !important; }
+
+.container { padding: 20px; max-width: 480px; margin: auto; }
+
+.card {
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.modal-card { width: 80%; max-width: 350px; text-align: center; }
+
+h2 { margin: 0 0 20px 0; font-size: 1.4rem; color: var(--mx-blue); font-weight: 800; }
+label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+input, select {
+    width: 100%; padding: 14px; margin-top: 6px;
+    border: 2px solid var(--border); border-radius: 12px;
+    box-sizing: border-box; font-size: 1rem; background: white;
+}
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+/* Buttons */
+button {
+    width: 100%; padding: 16px; border: none; border-radius: 14px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-primary { background: var(--mx-blue); color: white; }
+.btn-success { background: #10b981; color: white; margin-top: 1rem }
+.btn-danger { background: var(--mx-red); color: white; }
+.btn-danger-outline { background: white; color: var(--mx-red); border: 2px solid var(--mx-red); margin-top: 10px; }
+.btn-danger-large { background: white; color: var(--mx-red); border: 2px solid var(--mx-red); margin-top: 30px; }
+.btn-outline { background: white; color: var(--text); border: 2px solid var(--border); }
+.btn-link { background: none; color: #64748b; font-size: 0.8rem; margin-top: 10px; font-weight: 400; padding: 5px; }
+
+/* Spinners */
+.spinner {
+    width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%; border-top-color: #fff;
+    animation: spin 0.8s linear infinite; display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Logo */
+.logo-header { text-align: center; margin: 60px 0 30px; }
+.logo-text { font-size: 3rem; font-family: sans-serif; font-style: italic; letter-spacing: -1px; line-height: 1; }
+.logo-blue { color: var(--mx-blue); font-weight: 900; }
+.logo-red { color: var(--mx-red); font-weight: 400; }
+.logo-sub { color: #64748b; font-weight: 600; }
+
+/* UI Helpers */
+.standby-section { margin-top:20px; padding-top:15px; border-top: 1px solid var(--border); }
+.label-blue { color: var(--mx-blue); }
+#hours-preview { background: var(--mx-blue); color:white; padding:8px 15px; border-radius:12px; margin-top:20px; font-weight:bold; }
+.card-title-blue { font-size: 1rem; margin-top: 0; color: var(--mx-blue); }
+
+/* Navigation */
+nav {
+    position: fixed; bottom: 20px; left: 20px; right: 20px;
+    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+    display: flex; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    border: 1px solid var(--border); height: 75px; z-index: 1000;
+}
+nav button { flex: 1; background: none; color: #94a3b8; border: none; font-size: 0.75rem; flex-direction: column; gap: 5px; }
+nav button.active { color: var(--mx-blue); }
+.nav-icon { font-size: 1.2rem; }
+
+.history-item { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+
+#toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+    background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px;
+    transition: transform 0.4s; z-index: 2000;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+/* Maak de delete-knop in de lijst compact */
+.btn-delete-small {
+    background-color: var(--mx-red);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 40px; /* Vaste breedte zodat hij niet uitrekt */
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-delete-small:hover {
+    opacity: 0.8;
+}
+
+/* Stijl voor de lijst-items */
+.driver-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.driver-list-item:last-child {
+    border-bottom: none;
+}
+.main-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 0.8rem;
+    color: #64748b; /* Zacht grijs */
+    z-index: 9999;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+.main-footer p {
+    margin: 2px 0;
+}
+
+.footer-credit {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+/* Belangrijk: Geef de app wat ruimte aan de onderkant
+   zodat de footer de knoppen niet bedekt */
+#app {
+    padding-bottom: 60px;
+}
+
+/* Pas de navigatie aan zodat deze boven de footer zweeft als je die ook gebruikt */
+nav {
+    bottom: 45px !important; /* Zet de nav iets hoger vanwege de nieuwe footer */
+}
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    /* De breedte heb je al in HTML staan, dus dit is genoeg */
+}
