@@ -191,3 +191,30 @@ img {
         max-width: 400px;     /* Maar hij wordt nooit groter dan 400px op mobiel */
     }
 }
+/* --- FOOTER EN NAVIGATIE AFSTAND --- */
+
+.footer-link {
+    color: var(--mx-blue);
+    text-decoration: underline;
+    font-weight: bold;
+    display: inline-block;
+    margin: 5px 0;
+}
+
+.footer-link:active {
+    color: var(--mx-red);
+}
+
+/* De navigatiebalk zweeft nu een stukje hoger boven de footer voor een cleaner uiterlijk */
+nav {
+    bottom: 80px !important; /* Verhoogd van 65px naar 105px */
+}
+
+/* Zorg dat de content van de app (zoals ritten) niet achter de nav/footer verdwijnt */
+body {
+    padding-bottom: 200px; /* Genoeg ruimte onderaan voor scrollen */
+}
+
+#app {
+    padding-bottom: 120px; /* Ruimte onder de laatste kaart */
+}
