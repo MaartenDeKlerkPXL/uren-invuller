@@ -123,16 +123,28 @@ async function login() {
     }
 }
 async function saveData() {
+    let wStart = document.getElementById('w_start').value;
+    let wEind = document.getElementById('w_eind').value;
+    const sStart = document.getElementById('s_start').value;
+    const sEind = document.getElementById('s_eind').value;
+
+    // Als werk leeg is maar standby wel gevuld, zet werk op 00:00
+    if ((!wStart || !wEind) && (sStart && sEind)) {
+        wStart = "00:00";
+        wEind = "00:00";
+    }
+
     const data = {
         user_name: currentUser,
         datum: document.getElementById('datum_input').value,
-        werk_start: document.getElementById('w_start').value,
-        werk_eind: document.getElementById('w_eind').value,
-        stby_start: document.getElementById('s_start').value || null,
-        stby_eind: document.getElementById('s_eind').value || null
+        werk_start: wStart,
+        werk_eind: wEind,
+        stby_start: sStart || null,
+        stby_eind: sEind || null
     };
 
     if(!data.werk_start || !data.werk_eind) return notify("Vul werktijden in", "error");
+
     const spinner = document.getElementById('save-spinner');
     spinner.style.display = "block";
 
@@ -249,15 +261,25 @@ function calculatePreview() {
     const ss = document.getElementById('s_start').value;
     const se = document.getElementById('s_eind').value;
     const badge = document.getElementById('hours-preview');
+
     const getDiff = (s, e) => {
         if(!s || !e) return 0;
         let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 3600000;
         return d < 0 ? d + 24 : d;
     };
+
+    // Nieuwe helper om decimalen (5.5) om te zetten naar tijd (5:30u)
+    const formatTime = (decimalHours) => {
+        const hours = Math.floor(decimalHours);
+        const minutes = Math.round((decimalHours - hours) * 60);
+        return `${hours}:${minutes < 10 ? '0' : ''}${minutes}u`;
+    };
+
     const wU = getDiff(ws, we);
     const sU = getDiff(ss, se);
-    if(wU > 0 || sU > 0) {
-        badge.innerHTML = `Werk: ${wU.toFixed(2)}u` + (sU > 0 ? ` | Standby: ${sU.toFixed(2)}u` : '');
+
+    if(wU > 0 || sU > 0 || (ss && se)) {
+        badge.innerHTML = `Werk: ${formatTime(wU)}` + (sU > 0 ? ` | Standby: ${formatTime(sU)}` : '');
         badge.classList.remove('hidden');
     } else badge.classList.add('hidden');
 }

@@ -175,3 +175,19 @@ img {
     margin-right: auto;
     /* De breedte heb je al in HTML staan, dus dit is genoeg */
 }
+
+/* Standaard instellingen voor alle schermen */
+img {
+    display: block;
+    margin: 0 auto 20px auto; /* Centkeren en 20px ruimte aan de onderkant */
+    max-width: 100%;          /* Zorg dat het nooit breder is dan de container */
+    height: auto;             /* Behoud de verhoudingen */
+}
+
+/* Mobiel en Tablet (Schermen kleiner dan 768px) */
+@media (max-width: 768px) {
+    img {
+        width: 90%;           /* Op mobiel pakt hij 90% van de schermbreedte */
+        max-width: 400px;     /* Maar hij wordt nooit groter dan 400px op mobiel */
+    }
+}
