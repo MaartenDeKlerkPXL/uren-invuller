@@ -170,13 +170,17 @@ async function adminAction(actionType) {
     if (!confirm(`${actionType === 'sync' ? 'Synchroniseren' : 'Wissen'} voor IEDEREEN in ${mName}?`)) return;
 
     notify("Bezig met verwerken...");
-    for (const chauffeur in USER_SHEETS) {
-        const url = USER_SHEETS[chauffeur];
-        if (!url || url.includes("DE_")) continue;
+
+    // NIEUW: Haal álle chauffeurs rechtstreeks uit de database
+    const { data: chauffeurs } = await supabaseClient.from('chauffeurs').select('*');
+
+    for (const chauffeur of chauffeurs) {
+        const url = chauffeur.sheet_url;
+        if (!url || url.includes("DE_")) continue; // Sla over als URL leeg is
 
         try {
             if (actionType === 'sync') {
-                const { data } = await supabaseClient.from('uren_registratie').select('*').eq('user_name', chauffeur);
+                const { data } = await supabaseClient.from('uren_registratie').select('*').eq('user_name', chauffeur.naam);
                 const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
                 if (filtered.length > 0) {
                     const rijen = filtered.map(d => ({
@@ -190,7 +194,7 @@ async function adminAction(actionType) {
             } else {
                 await fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear", maandNaam: mName }) });
             }
-        } catch (e) { console.error("Fout bij " + chauffeur, e); }
+        } catch (e) { console.error("Fout bij " + chauffeur.naam, e); }
     }
     notify("Klaar!");
 }
@@ -198,35 +202,22 @@ async function adminAction(actionType) {
 async function syncToGoogleSheets(btn) {
     const targetUser = document.getElementById('export-user-select').value;
     const mIdx = document.getElementById('month-select').value;
-
-    // DEZE REGEL MISTE: Haal de juiste URL op uit config.js
-    const scriptUrl = USER_SHEETS[targetUser];
     const spinner = document.getElementById('sync-spinner');
 
-    if(!scriptUrl) return notify("Geen URL ingesteld voor " + targetUser, "error");
+    // NIEUW: Haal de Sheet URL uit de database
+    const { data: driver } = await supabaseClient.from('chauffeurs').select('sheet_url').eq('naam', targetUser).maybeSingle();
+    const scriptUrl = driver ? driver.sheet_url : null;
+
+    if(!scriptUrl) return notify("Geen Google Sheet URL ingesteld voor " + targetUser, "error");
 
     btn.disabled = true;
     spinner.style.display = "block";
+    notify("Bezig met synchroniseren...");
 
-    console.log("--- Sync start ---");
-    console.log("Zoeken naar chauffeur:", targetUser);
-    console.log("Voor maand index:", mIdx);
+    const { data, error } = await supabaseClient.from('uren_registratie').select('*').eq('user_name', targetUser);
+    if (error) { spinner.style.display = "none"; btn.disabled = false; return notify("Fout: " + error.message, "error"); }
 
-    const { data, error } = await supabaseClient
-        .from('uren_registratie')
-        .select('*')
-        .eq('user_name', targetUser);
-
-    if (error) return notify("Fout bij ophalen: " + error.message, "error");
-
-    console.log("Totaal aantal ritten gevonden in database voor deze naam:", data.length);
-
-    const filtered = data.filter(d => {
-        const ritMaand = new Date(d.datum).getMonth();
-        return ritMaand == mIdx;
-    });
-
-    console.log("Ritten overgebleven na maand-filter:", filtered.length);
+    const filtered = data.filter(d => new Date(d.datum).getMonth() == mIdx);
 
     const rijen = filtered.sort((a,b) => new Date(a.datum) - new Date(b.datum)).map(d => ({
         maandNaam: document.getElementById('month-select').options[mIdx].text,
@@ -240,14 +231,22 @@ async function syncToGoogleSheets(btn) {
         await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(rijen) });
         notify("Gesynchroniseerd!");
     } catch (e) { notify("Sync mislukt", "error"); }
-    btn.disabled = false; spinner.style.display = "none";
+
+    btn.disabled = false;
+    spinner.style.display = "none";
 }
 
-async function clearSheet() {
+async function clearSheet(btn) {
     const targetUser = document.getElementById('export-user-select').value;
-    const scriptUrl = USER_SHEETS[targetUser];
     const mName = document.getElementById('month-select').options[document.getElementById('month-select').value].text;
+
     if(!confirm("Sheet van " + targetUser + " voor " + mName + " wissen?")) return;
+
+    // NIEUW: Haal URL uit de database
+    const { data: driver } = await supabaseClient.from('chauffeurs').select('sheet_url').eq('naam', targetUser).maybeSingle();
+    const scriptUrl = driver ? driver.sheet_url : null;
+
+    if(!scriptUrl) return notify("Geen URL ingesteld voor " + targetUser, "error");
 
     try {
         await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear", maandNaam: mName }) });
@@ -335,22 +334,30 @@ async function deleteRecord() {
 
 async function forgotPassword() {
     const user = document.getElementById('user-select').value;
-    const email = USER_EMAILS[user];
-    if (!email) return notify("Geen e-mailadres bekend voor " + user, "error");
 
+    // De baas check
+    if (user === "Stephan van Deurse") return notify("Stephan, je wachtwoord is 'baas'", "info");
+
+    notify("E-mailadres opzoeken in database...");
+
+    // NIEUW: Haal email direct uit de Supabase database!
+    const { data: driver } = await supabaseClient
+        .from('chauffeurs')
+        .select('email')
+        .eq('naam', user)
+        .maybeSingle();
+
+    if (!driver || !driver.email) return notify("Geen e-mailadres bekend voor " + user, "error");
+
+    const email = driver.email;
     notify("E-mail wordt verstuurd...");
 
-    // PAK HET WEBSTORM TOKEN UIT DE HUIDIGE URL
+    // URL token ophalen
     const urlParams = new URLSearchParams(window.location.search);
-    const webstormToken = urlParams.get('_ijt'); // Dit is die lange code uit je balk
-
+    const webstormToken = urlParams.get('_ijt');
     let baseLink = window.location.href.split('?')[0];
     let resetLink = baseLink + "?mode=reset&user=" + encodeURIComponent(user);
-
-    // Voeg het token weer toe als het er is, zodat WebStorm de pagina vindt
-    if (webstormToken) {
-        resetLink += "&_ijt=" + webstormToken;
-    }
+    if (webstormToken) resetLink += "&_ijt=" + webstormToken;
 
     const templateParams = {
         to_name: user,
