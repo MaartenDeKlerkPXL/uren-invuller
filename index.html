@@ -155,6 +155,20 @@
 </dialog>
 
 
+<!-- Inloggen (één keer per apparaat) -->
+<dialog id="dlg-login" class="sheet">
+    <form id="form-login" novalidate>
+        <p class="sheet-titel">Inloggen</p>
+        <p class="sheet-sub">Dit hoeft maar één keer op dit apparaat.</p>
+        <input type="password" id="login-wachtwoord" placeholder="Wachtwoord" autocomplete="current-password" aria-label="Wachtwoord">
+        <p class="login-fout" id="login-fout" role="alert"></p>
+        <button type="submit" class="btn btn-primary">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Inloggen</span>
+        </button>
+    </form>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="script.js"></script>

@@ -428,6 +428,9 @@ dialog.sheet form { display: flex; flex-direction: column; gap: 10px; }
 .sheet-sub { margin: 0 0 8px; color: var(--muted); font-size: .92rem; text-align: center; }
 .sheet-sub:empty { display: none; }
 
+.login-fout { margin: -2px 0 0; color: var(--danger); font-size: .88rem; font-weight: 600; text-align: center; }
+.login-fout:empty { display: none; }
+
 /* ---------- Toast ---------- */
 
 #toast {

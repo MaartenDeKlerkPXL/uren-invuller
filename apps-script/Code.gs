@@ -1,9 +1,13 @@
 /**
  * Uren-invuller — Apps Script backend
  *
- * Plak dit in Extensies > Apps Script van je urenstaat-Sheet
- * en deploy als web-app (Uitvoeren als: ik, Toegang: iedereen).
+ * Plak dit in Extensies > Apps Script van je urenstaat-Sheet,
+ * kies hieronder je wachtwoord en deploy als web-app
+ * (Uitvoeren als: ik, Toegang: iedereen).
  */
+
+// Kies hier je wachtwoord. De app vraagt dit één keer per apparaat.
+const GEHEIM = "VERANDER-MIJ";
 
 const BLAD = "Blad1";
 const EERSTE_RIJ = 10;       // dag 1 staat op rij 10, dag 31 op rij 40
@@ -18,6 +22,11 @@ function doPost(e) {
   } catch (err) {
     return antwoord({ ok: false, fout: "Ongeldig verzoek" });
   }
+
+  if (GEHEIM === "VERANDER-MIJ") {
+    return antwoord({ ok: false, login: true, fout: "Stel eerst een wachtwoord in bovenaan het Apps Script" });
+  }
+  if (input.geheim !== GEHEIM) return antwoord({ ok: false, login: true, fout: "Wachtwoord klopt niet" });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -182,4 +191,25 @@ function stelMaandIn(maand) {
   if (!geldigeMaand(maand)) return { ok: false, fout: "Ongeldige maand" };
   zetMaand(blad(), maand);
   return status();
+}
+
+/**
+ * EENMALIG: zet de oktober-uren klaar.
+ * Blad1 bevat nu september (al verstuurd). Dit archiveert september als
+ * tabblad "September 2026", maakt Blad1 leeg en zet 1, 10 en 22 oktober erin.
+ * Draait maar één keer: daarna doet deze functie niks meer.
+ */
+function eenmaligOktoberKlaarzetten() {
+  if (huidigeMaand()) {
+    Logger.log("Niks gedaan: de sheet staat al op " + huidigeMaand());
+    return;
+  }
+  zetMaand(blad(), "2026-09");
+  nieuweMaand("2026-10");
+  [
+    { datum: "2026-10-01", werkStart: "07:45", werkEind: "17:30" },
+    { datum: "2026-10-10", standbyStart: "08:00", standbyEind: "16:00" },
+    { datum: "2026-10-22", werkStart: "08:30", werkEind: "16:15" }
+  ].forEach(opslaan);
+  Logger.log("Klaar: september gearchiveerd, oktober staat in Blad1");
 }

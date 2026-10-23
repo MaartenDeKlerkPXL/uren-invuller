@@ -14,7 +14,8 @@ Live: https://maartendeklerkpxl.github.io/uren-invuller/
 ### 1. Apps Script in de Sheet zetten
 
 1. Open je urenstaat in Google Sheets → **Extensies → Apps Script**.
-2. Vervang alle code door de inhoud van [`apps-script/Code.gs`](apps-script/Code.gs) en klik op **Opslaan**.
+2. Vervang alle code door de inhoud van [`apps-script/Code.gs`](apps-script/Code.gs).
+3. Verander bovenaan `GEHEIM` (`"VERANDER-MIJ"`) in je eigen wachtwoord en klik op **Opslaan**.
 
 ### 2. Deployen als web-app
 
@@ -24,11 +25,11 @@ Live: https://maartendeklerkpxl.github.io/uren-invuller/
 
 Maak je ooit een nieuwe implementatie (andere URL), pas dan `WEBAPP_URL` bovenaan `script.js` aan.
 
-### 3. Klaar
+### 3. Inloggen
 
-Open de app. Staan er al uren in de Sheet, dan vraagt de app één keer bij welke maand die horen.
+Open de app en vul je wachtwoord in. Dat hoeft maar één keer per apparaat; daarna onthoudt de app je. Verander je het wachtwoord in het script, dan vraagt de app er op elk apparaat opnieuw om.
 
-> Er is geen login: iedereen die de web-app URL kent, kan uren in de Sheet zetten of aanpassen.
+Staan er al uren in de Sheet zonder bekende maand, dan vraagt de app één keer bij welke maand die horen.
 
 ## Bestanden
 

@@ -3,6 +3,7 @@
 // Web-app URL van het Apps Script in de urenstaat-Sheet
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwrlKV6y7xTYcZH1hL5gO41QVuvJeIHw9pGUnLV8duHPAec6tqJNoSV0igTlDEP3fDQzQ/exec';
 const CACHE_SLEUTEL = 'uren_cache';
+const WACHTWOORD_SLEUTEL = 'uren_wachtwoord';
 
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli',
     'augustus', 'september', 'oktober', 'november', 'december'];
@@ -59,11 +60,11 @@ function datumLang(iso) {
 
 // ---------- Verbinding met Apps Script ----------
 
-async function api(actie, data = {}) {
+async function verstuur(actie, data, geheim) {
     let res;
     try {
         // Geen eigen headers: dan blijft het een "simple request" en is er geen CORS-preflight nodig
-        res = await fetch(WEBAPP_URL, { method: 'POST', body: JSON.stringify({ actie, ...data }) });
+        res = await fetch(WEBAPP_URL, { method: 'POST', body: JSON.stringify({ geheim, actie, ...data }) });
     } catch {
         throw new Error('Geen verbinding. Check je internet.');
     }
@@ -80,6 +81,59 @@ async function api(actie, data = {}) {
         schrijf(CACHE_SLEUTEL, JSON.stringify(staat));
     }
     return json;
+}
+
+// Elke actie gaat hierlangs: zonder (geldig) wachtwoord eerst inloggen, daarna opnieuw proberen
+async function api(actie, data = {}) {
+    let geheim = lees(WACHTWOORD_SLEUTEL) || await inloggen();
+    let json = await verstuur(actie, data, geheim);
+    if (json.login) {
+        schrijf(WACHTWOORD_SLEUTEL, null);
+        geheim = await inloggen(json.fout);
+        json = await verstuur(actie, data, geheim);
+    }
+    return json;
+}
+
+// Login-venster. Na één geslaagde login onthoudt dit apparaat het wachtwoord.
+let loginBezig = null;
+function inloggen(fout = '') {
+    if (loginBezig) return loginBezig;
+    loginBezig = new Promise(resolve => {
+        const dlg = $('dlg-login');
+        const form = $('form-login');
+        const knop = form.querySelector('button');
+        $('login-fout').textContent = fout && fout !== 'Wachtwoord klopt niet' ? fout : '';
+        $('login-wachtwoord').value = '';
+
+        async function verstuurLogin(e) {
+            e.preventDefault();
+            const wachtwoord = $('login-wachtwoord').value;
+            if (!wachtwoord) return;
+            laden(knop, true);
+            $('login-fout').textContent = '';
+            try {
+                const res = await verstuur('status', {}, wachtwoord);
+                if (!res.ok) throw new Error(res.fout || 'Inloggen mislukt');
+                schrijf(WACHTWOORD_SLEUTEL, wachtwoord);
+                form.removeEventListener('submit', verstuurLogin);
+                dlg.close();
+                loginBezig = null;
+                melding('Ingelogd. Dit apparaat onthoudt je.');
+                resolve(wachtwoord);
+            } catch (err) {
+                $('login-fout').textContent = err.message;
+                $('login-wachtwoord').select();
+            } finally {
+                laden(knop, false);
+            }
+        }
+
+        form.addEventListener('submit', verstuurLogin);
+        dlg.showModal();
+        $('login-wachtwoord').focus();
+    });
+    return loginBezig;
 }
 
 // ---------- Weergave ----------
@@ -420,12 +474,15 @@ function init() {
     }));
 
     // Klik op de achtergrond (buiten het kader) sluit een dialog
-    document.querySelectorAll('dialog').forEach(dlg => dlg.addEventListener('click', (e) => {
+    document.querySelectorAll('dialog:not(#dlg-login)').forEach(dlg => dlg.addEventListener('click', (e) => {
         if (e.target !== dlg) return;
         const r = dlg.getBoundingClientRect();
         const binnen = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
         if (!binnen) dlg.close();
     }));
+
+    // Het login-venster kan niet weggeklikt worden met Escape
+    $('dlg-login').addEventListener('cancel', (e) => e.preventDefault());
 
     // Direct de laatst bekende stand tonen, daarna verversen
     try {
