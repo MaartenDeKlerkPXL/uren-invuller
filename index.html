@@ -2,178 +2,196 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maatexpress Urenregistratie</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Uren</title>
+    <meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f141b" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Uren">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script>
-        (function(){
-            emailjs.init("BKNOFZ05gMJ_VtcsV");
-        })();
-    </script>
 </head>
 <body>
 
-<div id="toast">Bericht</div>
-
-<div id="edit-overlay" class="hidden">
-    <div class="card modal-card">
-        <h2 id="edit-title">Rit aanpassen</h2>
-        <p id="edit-details"></p>
-        <button class="btn-primary" style="margin-top: 2rem" onclick="prepareEdit()">✏️ Aanpassen</button>
-        <button class="btn-danger" style="margin-top: 1rem" onclick="deleteRecord()">🗑️ Verwijderen</button>
-        <button class="btn-outline" style="margin-top: 1rem" onclick="closeOverlay()">Annuleren</button>
+<header class="topbar">
+    <div>
+        <h1>Uren</h1>
+        <p class="topbar-sub" id="maand-label">&nbsp;</p>
     </div>
-</div>
+    <button class="icon-btn hidden" id="btn-instellingen" aria-label="Instellingen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+    </button>
+</header>
 
-<div id="app">
-    <!-- LOGIN VIEW -->
-    <img src="Maatexpress logo.png"
-         alt="logo maatexpress"
-         height="auto"
-         width="600"
-         style="display: block; margin: 0 auto;"/><div id="view-login" class="container">
-                <div class="card">
-            <h2>Welkom</h2>
-            <label>Wie ben je?</label>
-            <select id="user-select">
-                <option value="Stephan van Deurse">Stephan van Deurse</option>
-                <option value="Maarten de Klerk">Maarten de Klerk</option>
-                <option value="Bob Klaasen">Bob Klaasen</option>
-                <option value="Stef Pieters">Stef Pieters</option>
-            </select>
-            <label>Wachtwoord</label>
-            <input type="password" id="password-input" placeholder="Wachtwoord">
-            <button class="btn-link" onclick="forgotPassword()">Wachtwoord vergeten?</button>
-            <button class="btn-primary" onclick="login()">
-                <div class="spinner" id="login-spinner"></div>
-                <span>Inloggen</span>
-            </button>
+<main>
+    <!-- KOPPELEN (eerste keer) -->
+    <section id="view-koppelen" class="view hidden">
+        <div class="card reveal">
+            <h2>Koppel je Google Sheet</h2>
+            <p class="muted">Plak de web-app URL van je Apps Script en het wachtwoord dat je daarin hebt gezet. Dit hoef je maar één keer te doen.</p>
+            <form id="form-koppelen" class="stack">
+                <label class="field">
+                    <span>Web-app URL</span>
+                    <input type="url" id="koppel-url" placeholder="https://script.google.com/macros/s/…/exec" required autocomplete="off">
+                </label>
+                <label class="field">
+                    <span>Wachtwoord</span>
+                    <input type="password" id="koppel-geheim" placeholder="Uit je Apps Script" required autocomplete="current-password">
+                </label>
+                <button type="submit" class="btn btn-primary">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span class="btn-label">Verbinden</span>
+                </button>
+            </form>
+            <a class="link-subtle" href="https://github.com/MaartenDeKlerkPXL/uren-invuller#installeren" target="_blank" rel="noopener">Hoe zet ik het Apps Script op?</a>
         </div>
-    </div>
+    </section>
 
-    <!-- INPUT VIEW -->
-    <div id="view-input" class="container hidden">
-        <h2 id="welcome-msg">Hoi!</h2>
-        <div class="card">
-            <label>Datum</label>
-            <input type="date" id="datum_input">
-            <div class="grid">
-                <div><label>Start Werk</label><input type="time" id="w_start" class="time-input"></div>
-                <div><label>Eind Werk</label><input type="time" id="w_eind" class="time-input"></div>
+    <!-- HOOFDSCHERM -->
+    <section id="view-app" class="view hidden">
+        <div class="card reveal" id="card-invoer">
+            <div class="card-head">
+                <h2 id="invoer-titel">Nieuwe dag</h2>
+                <button type="button" class="link-btn hidden" id="btn-annuleer-bewerken">Annuleren</button>
             </div>
-            <div class="standby-section">
-                <label class="label-blue">Standby (Optioneel)</label>
-                <div class="grid">
-                    <div><label>Vanaf</label><input type="time" id="s_start" class="time-input"></div>
-                    <div><label>Tot</label><input type="time" id="s_eind" class="time-input"></div>
-                </div>
-            </div>
-            <div id="hours-preview" class="hidden"></div>
-            <button class="btn-success" id="save-btn" onclick="saveData()">
-                <div class="spinner" id="save-spinner"></div>
-                <span>💾 Zet in urenstaat</span>
-            </button>
-        </div>
-        <div class="card">
-            <h3 class="card-title-blue">Laatste ritten</h3>
-            <div id="history-list">Laden...</div>
-        </div>
-    </div>
 
-    <!-- ADMIN VIEW -->
-    <div id="view-admin" class="container hidden">
-        <div class="logo-header">
-            <h2 style="margin-bottom: 0;">Beheerder Paneel</h2>
-            <p>Welkom Stephan</p>
+            <form id="form-invoer" class="stack" novalidate>
+                <div class="field">
+                    <div class="field-kop">
+                        <label for="datum">Datum</label>
+                        <div class="chips" role="group" aria-label="Snelle datum">
+                            <button type="button" class="chip" data-dagen="0">Vandaag</button>
+                            <button type="button" class="chip" data-dagen="-1">Gisteren</button>
+                        </div>
+                    </div>
+                    <input type="date" id="datum" required>
+                </div>
+
+                <div class="grid-2">
+                    <label class="field">
+                        <span>Begintijd</span>
+                        <input type="time" id="werk-start" class="tijd">
+                    </label>
+                    <label class="field">
+                        <span>Eindtijd</span>
+                        <input type="time" id="werk-eind" class="tijd">
+                    </label>
+                </div>
+
+                <button type="button" class="toggle" id="btn-standby" aria-expanded="false" aria-controls="standby-blok">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    <span>Standby toevoegen</span>
+                </button>
+
+                <div class="standby" id="standby-blok">
+                    <div class="standby-inner">
+                        <div class="grid-2">
+                            <label class="field">
+                                <span>Standby vanaf</span>
+                                <input type="time" id="standby-start" class="tijd" tabindex="-1">
+                            </label>
+                            <label class="field">
+                                <span>Standby tot</span>
+                                <input type="time" id="standby-eind" class="tijd" tabindex="-1">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview" id="preview" aria-live="polite"></div>
+
+                <button type="submit" class="btn btn-primary" id="btn-opslaan">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span class="btn-label">Zet in urenstaat</span>
+                </button>
+            </form>
         </div>
 
-        <div class="card">
-            <label>Maand voor alle chauffeurs</label>
-            <select id="admin-month-select"></select>
-            <button style="margin-top: 1rem" class="btn-primary" onclick="adminAction('sync')">
-                <span>🚀 Synchroniseer IEDEREEN</span>
-            </button>
-            <button class="btn-danger-outline" onclick="adminAction('clear')">
-                <span>🗑️</span> Maak ALLE Sheets Leeg
-            </button>
-        </div>
-
-        <!-- Deze sectie is nu even breed als de rest en alleen in dit view (Stephan) -->
-        <div class="card" style="margin-top: 1.5rem;">
-            <h3 class="card-title-blue">👥 Chauffeur Toevoegen</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div>
-                    <label>Volledige Naam</label>
-                    <input type="text" id="new-driver-name" placeholder="bijv. Maarten de Klerk">
-                </div>
-                <div>
-                    <label>E-mailadres</label>
-                    <input type="email" id="new-driver-email" placeholder="bijv. Maarten@maatexpress.eu">
-                </div>
-                <div>
-                    <label>Google Sheet URL (/exec link)</label>
-                    <input type="text" id="new-driver-sheet" placeholder="https://script.google.com/...">
-                </div>
-                <button class="btn-success" onclick="addDriver()" style="margin-top: 5px;">
-                    <span>➕</span> Voeg Chauffeur Toe
+        <div class="card reveal" id="card-maand">
+            <div class="card-head">
+                <h2 id="maand-titel">Deze maand</h2>
+                <button type="button" class="icon-btn small" id="btn-vernieuwen" aria-label="Vernieuwen">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg>
                 </button>
             </div>
+
+            <div class="stats">
+                <div class="stat"><span class="stat-num" id="stat-werk">0:00</span><span class="stat-label">Gewerkt</span></div>
+                <div class="stat"><span class="stat-num" id="stat-standby">0:00</span><span class="stat-label">Standby</span></div>
+                <div class="stat"><span class="stat-num" id="stat-dagen">0</span><span class="stat-label">Dagen</span></div>
+            </div>
+
+            <ul class="ritten" id="ritten"></ul>
         </div>
 
-        <div class="card" style="margin-top: 1.5rem;">
-            <h3 class="card-title-blue">Huidige Chauffeurs</h3>
-            <div id="admin-driver-list">Laden...</div>
-        </div>
-    </div>
-    <!-- EXPORT VIEW -->
-    <div id="view-export" class="container hidden">
-        <h2>Export & Sync</h2>
-        <div class="card">
-            <label>Chauffeur selecteren</label>
-            <select id="export-user-select"></select>
-            <label>Maand selecteren</label>
-            <select id="month-select"></select>
-            <button style="margin-top: 1rem" class="btn-primary" onclick="syncToGoogleSheets(this)">
-                <div class="spinner" id="sync-spinner"></div>
-                <span>🚀 Synchroniseer Google Sheets</span>
-            </button>
-            <button class="btn-danger-large" onclick="clearSheet(this)">
-                <span>🗑️</span> Maak Sheet Leeg
+        <div class="acties reveal">
+            <a class="btn btn-ghost" id="link-sheet" href="#" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+                Open Google Sheet
+            </a>
+            <button type="button" class="btn btn-ghost" id="btn-nieuwe-maand">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4zM4 8l2-4h12l2 4M9 13h6"/></svg>
+                Nieuwe maand starten
             </button>
         </div>
-    </div>
+    </section>
+</main>
 
-    <!-- RESET VIEW -->
-    <div id="view-reset" class="container hidden">
-        <h2>Nieuw Wachtwoord</h2>
-        <div class="card">
-            <p id="reset-user-text">Hoi, kies een nieuw wachtwoord.</p>
-            <label>Nieuw Wachtwoord</label>
-            <input type="password" id="new-password-input" placeholder="Minimaal 4 tekens">
-            <button class="btn-primary" onclick="confirmNewPassword()" style="margin-top: 20px;">
-                <span>🔐</span> Wachtwoord Opslaan
-            </button>
-            <!-- Verander location.reload() naar dit: -->
-            <button class="btn-link" onclick="window.location.href = window.location.pathname;">
-                Terug naar inloggen
-            </button>        </div>
-    </div>
-</div>
-
-<nav id="navbar" class="hidden">
-    <button onclick="showPage('input')" id="nav-input"><span class="nav-icon">➕</span> Invoeren</button>
-    <button onclick="showPage('admin')" id="nav-admin" class="hidden"><span class="nav-icon">⚙️</span> Beheer</button>
-    <button onclick="showPage('export')" id="nav-export"><span class="nav-icon">📂</span> Export</button>
-    <button onclick="logout()"><span class="nav-icon">🚪</span> Uitloggen</button>
-</nav>
-<footer class="main-footer">
-    <p>Vragen? Mail Stephan: info@maatexpress.eu</p>
-    <p><a href="instructies.html" class="footer-link">📲 Hoe sla ik deze site op als app?</a></p>
-    <p class="footer-credit">Gemaakt door collega Maarten de Klerk</p>
+<footer class="footer">
+    <a href="instructies.html">Op je beginscherm zetten</a>
 </footer>
-<script src="config.js"></script>
-<script src="index.js"></script>
+
+<!-- Rit-acties -->
+<dialog id="dlg-rit" class="sheet">
+    <form method="dialog">
+        <p class="sheet-titel" id="rit-titel"></p>
+        <p class="sheet-sub" id="rit-sub"></p>
+        <button value="bewerken" class="btn btn-primary">Aanpassen</button>
+        <button value="verwijderen" class="btn btn-danger">Verwijderen</button>
+        <button value="annuleren" class="btn btn-ghost">Annuleren</button>
+    </form>
+</dialog>
+
+<!-- Bevestigen -->
+<dialog id="dlg-bevestig" class="sheet">
+    <form method="dialog">
+        <p class="sheet-titel" id="bevestig-titel"></p>
+        <p class="sheet-sub" id="bevestig-tekst"></p>
+        <button value="ja" class="btn btn-primary" id="bevestig-ja">Ja</button>
+        <button value="nee" class="btn btn-ghost">Annuleren</button>
+    </form>
+</dialog>
+
+<!-- Maand van bestaande uren (eenmalig) -->
+<dialog id="dlg-maand" class="sheet">
+    <form method="dialog">
+        <p class="sheet-titel">Van welke maand zijn deze uren?</p>
+        <p class="sheet-sub">Er staan al uren in je sheet. Kies de maand waar ze bij horen, dan kan de app ze goed tonen.</p>
+        <select id="maand-keuze" aria-label="Maand"></select>
+        <button value="ok" class="btn btn-primary">Opslaan</button>
+        <button value="nee" class="btn btn-ghost">Later</button>
+    </form>
+</dialog>
+
+<!-- Instellingen -->
+<dialog id="dlg-instellingen" class="sheet">
+    <form method="dialog">
+        <p class="sheet-titel">Instellingen</p>
+        <p class="sheet-sub" id="instellingen-info"></p>
+        <button value="ontkoppel" class="btn btn-danger">Ontkoppelen</button>
+        <button value="sluit" class="btn btn-ghost">Sluiten</button>
+    </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="script.js"></script>
 </body>
 </html>

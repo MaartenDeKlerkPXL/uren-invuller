@@ -1,0 +1,13 @@
+{
+    "name": "Uren",
+    "short_name": "Uren",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#f4f6f9",
+    "theme_color": "#0e72b5",
+    "icons": [
+        { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+        { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    ]
+}
