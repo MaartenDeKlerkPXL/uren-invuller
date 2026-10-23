@@ -1,13 +1,9 @@
 /**
  * Uren-invuller — Apps Script backend
  *
- * Plak dit in Extensies > Apps Script van je urenstaat-Sheet,
- * kies hieronder je eigen wachtwoord en deploy als web-app
- * (Uitvoeren als: ik, Toegang: iedereen).
+ * Plak dit in Extensies > Apps Script van je urenstaat-Sheet
+ * en deploy als web-app (Uitvoeren als: ik, Toegang: iedereen).
  */
-
-// Kies hier een eigen wachtwoord. Dit vul je één keer in de app in.
-const GEHEIM = "kies-hier-een-wachtwoord";
 
 const BLAD = "Blad1";
 const EERSTE_RIJ = 10;       // dag 1 staat op rij 10, dag 31 op rij 40
@@ -22,8 +18,6 @@ function doPost(e) {
   } catch (err) {
     return antwoord({ ok: false, fout: "Ongeldig verzoek" });
   }
-
-  if (input.geheim !== GEHEIM) return antwoord({ ok: false, fout: "Wachtwoord klopt niet" });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);

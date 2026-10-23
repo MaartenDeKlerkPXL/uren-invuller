@@ -25,37 +25,11 @@
         <h1>Uren</h1>
         <p class="topbar-sub" id="maand-label">&nbsp;</p>
     </div>
-    <button class="icon-btn hidden" id="btn-instellingen" aria-label="Instellingen">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-    </button>
 </header>
 
 <main>
-    <!-- KOPPELEN (eerste keer) -->
-    <section id="view-koppelen" class="view hidden">
-        <div class="card reveal">
-            <h2>Koppel je Google Sheet</h2>
-            <p class="muted">Plak de web-app URL van je Apps Script en het wachtwoord dat je daarin hebt gezet. Dit hoef je maar één keer te doen.</p>
-            <form id="form-koppelen" class="stack">
-                <label class="field">
-                    <span>Web-app URL</span>
-                    <input type="url" id="koppel-url" placeholder="https://script.google.com/macros/s/…/exec" required autocomplete="off">
-                </label>
-                <label class="field">
-                    <span>Wachtwoord</span>
-                    <input type="password" id="koppel-geheim" placeholder="Uit je Apps Script" required autocomplete="current-password">
-                </label>
-                <button type="submit" class="btn btn-primary">
-                    <span class="spinner" aria-hidden="true"></span>
-                    <span class="btn-label">Verbinden</span>
-                </button>
-            </form>
-            <a class="link-subtle" href="https://github.com/MaartenDeKlerkPXL/uren-invuller#installeren" target="_blank" rel="noopener">Hoe zet ik het Apps Script op?</a>
-        </div>
-    </section>
-
     <!-- HOOFDSCHERM -->
-    <section id="view-app" class="view hidden">
+    <section id="view-app" class="view">
         <div class="card reveal" id="card-invoer">
             <div class="card-head">
                 <h2 id="invoer-titel">Nieuwe dag</h2>
@@ -180,15 +154,6 @@
     </form>
 </dialog>
 
-<!-- Instellingen -->
-<dialog id="dlg-instellingen" class="sheet">
-    <form method="dialog">
-        <p class="sheet-titel">Instellingen</p>
-        <p class="sheet-sub" id="instellingen-info"></p>
-        <button value="ontkoppel" class="btn btn-danger">Ontkoppelen</button>
-        <button value="sluit" class="btn btn-ghost">Sluiten</button>
-    </form>
-</dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
 

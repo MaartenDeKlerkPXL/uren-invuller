@@ -111,26 +111,20 @@ main { flex: 1; }
 
 h2 { margin: 0; font-size: 1.1rem; font-weight: 650; letter-spacing: -.01em; }
 
-#view-koppelen h2 { margin-bottom: 6px; }
-
-.muted { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
-
 .stack { display: flex; flex-direction: column; gap: 14px; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 .footer { text-align: center; padding-top: 22px; padding-bottom: 26px; }
 
-.footer a, .link-subtle {
+.footer a {
     color: var(--muted);
     font-size: .85rem;
     text-decoration: none;
     border-bottom: 1px solid var(--border);
     transition: color .2s, border-color .2s;
 }
-.footer a:hover, .link-subtle:hover { color: var(--accent); border-color: var(--accent); }
-
-.link-subtle { display: inline-block; margin-top: 16px; }
+.footer a:hover { color: var(--accent); border-color: var(--accent); }
 
 .stappen { margin: 12px 0 0; padding-left: 20px; line-height: 1.7; color: var(--text); }
 .stappen li::marker { color: var(--accent); font-weight: 700; }
@@ -319,8 +313,6 @@ input::-webkit-date-and-time-value { text-align: left; }
 .icon-btn:hover { color: var(--text); border-color: var(--muted); }
 .icon-btn.small { width: 36px; height: 36px; }
 .icon-btn.small svg { width: 17px; height: 17px; }
-#btn-instellingen:hover svg { transform: rotate(45deg); }
-#btn-instellingen svg { transition: transform .4s var(--ease); }
 .icon-btn.spinning svg { animation: spin .8s linear infinite; }
 
 .link-btn {

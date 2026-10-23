@@ -1,10 +1,8 @@
 // ---------- Instellingen & staat ----------
 
-const OPSLAG = {
-    url: 'uren_url',
-    geheim: 'uren_geheim',
-    cache: 'uren_cache'
-};
+// Web-app URL van het Apps Script in de urenstaat-Sheet
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwrlKV6y7xTYcZH1hL5gO41QVuvJeIHw9pGUnLV8duHPAec6tqJNoSV0igTlDEP3fDQzQ/exec';
+const CACHE_SLEUTEL = 'uren_cache';
 
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli',
     'augustus', 'september', 'oktober', 'november', 'december'];
@@ -62,14 +60,10 @@ function datumLang(iso) {
 // ---------- Verbinding met Apps Script ----------
 
 async function api(actie, data = {}) {
-    const url = lees(OPSLAG.url);
-    const geheim = lees(OPSLAG.geheim);
-    if (!url || !geheim) throw new Error('Nog niet gekoppeld');
-
     let res;
     try {
         // Geen eigen headers: dan blijft het een "simple request" en is er geen CORS-preflight nodig
-        res = await fetch(url, { method: 'POST', body: JSON.stringify({ geheim, actie, ...data }) });
+        res = await fetch(WEBAPP_URL, { method: 'POST', body: JSON.stringify({ actie, ...data }) });
     } catch {
         throw new Error('Geen verbinding. Check je internet.');
     }
@@ -83,18 +77,12 @@ async function api(actie, data = {}) {
 
     if (json.ok) {
         staat = { maand: json.maand, ritten: json.ritten || [], sheetUrl: json.sheetUrl };
-        schrijf(OPSLAG.cache, JSON.stringify(staat));
+        schrijf(CACHE_SLEUTEL, JSON.stringify(staat));
     }
     return json;
 }
 
 // ---------- Weergave ----------
-
-function toonView(naam) {
-    $('view-koppelen').classList.toggle('hidden', naam !== 'koppelen');
-    $('view-app').classList.toggle('hidden', naam !== 'app');
-    $('btn-instellingen').classList.toggle('hidden', naam !== 'app');
-}
 
 function renderMaand(nieuweDatum) {
     const naam = staat.maand ? hoofdletter(maandNaam(staat.maand)) : 'Deze maand';
@@ -410,51 +398,9 @@ async function nieuweMaandStarten() {
     }
 }
 
-async function koppelen(e) {
-    e.preventDefault();
-    const url = $('koppel-url').value.trim();
-    const geheim = $('koppel-geheim').value;
-    if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)) {
-        return melding('Dat lijkt geen Apps Script web-app URL (eindigt op /exec)', true);
-    }
-
-    const knop = e.submitter || $('form-koppelen').querySelector('button');
-    laden(knop, true);
-    schrijf(OPSLAG.url, url);
-    schrijf(OPSLAG.geheim, geheim);
-    try {
-        const res = await api('status');
-        if (!res.ok) throw new Error(res.fout || 'Verbinden mislukt');
-        $('koppel-geheim').value = '';
-        toonView('app');
-        resetFormulier();
-        renderMaand();
-        melding('Gekoppeld met je Google Sheet');
-        if (res.onbekendeMaand) await vraagMaand();
-    } catch (err) {
-        schrijf(OPSLAG.url, null);
-        schrijf(OPSLAG.geheim, null);
-        melding(err.message, true);
-    } finally {
-        laden(knop, false);
-    }
-}
-
-async function instellingen() {
-    const url = lees(OPSLAG.url) || '';
-    $('instellingen-info').textContent = 'Gekoppeld met …' + url.slice(-28);
-    if ((await vraag($('dlg-instellingen'))) !== 'ontkoppel') return;
-    if (!(await bevestig('Ontkoppelen?', 'Je Sheet blijft gewoon bestaan. Je moet daarna opnieuw de URL en het wachtwoord invullen.', 'Ontkoppelen'))) return;
-    [OPSLAG.url, OPSLAG.geheim, OPSLAG.cache].forEach(k => schrijf(k, null));
-    staat = { maand: null, ritten: [], sheetUrl: null };
-    $('maand-label').innerHTML = '&nbsp;';
-    toonView('koppelen');
-}
-
 // ---------- Start ----------
 
 function init() {
-    $('form-koppelen').addEventListener('submit', koppelen);
     $('form-invoer').addEventListener('submit', opslaan);
     $('btn-annuleer-bewerken').addEventListener('click', resetFormulier);
     $('btn-standby').addEventListener('click', () => {
@@ -464,7 +410,6 @@ function init() {
     });
     $('btn-vernieuwen').addEventListener('click', () => vernieuwen());
     $('btn-nieuwe-maand').addEventListener('click', nieuweMaandStarten);
-    $('btn-instellingen').addEventListener('click', instellingen);
     $('datum').addEventListener('change', updateChips);
     document.querySelectorAll('.tijd').forEach(el => el.addEventListener('input', updatePreview));
     document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
@@ -482,25 +427,19 @@ function init() {
         if (!binnen) dlg.close();
     }));
 
-    if (!lees(OPSLAG.url) || !lees(OPSLAG.geheim)) {
-        toonView('koppelen');
-        return;
-    }
-
     // Direct de laatst bekende stand tonen, daarna verversen
     try {
-        const cache = JSON.parse(lees(OPSLAG.cache));
+        const cache = JSON.parse(lees(CACHE_SLEUTEL));
         if (cache) staat = cache;
     } catch { /* geen cache */ }
 
-    toonView('app');
     resetFormulier();
     renderMaand();
     vernieuwen(Boolean(staat.ritten.length));
 
     // Terug naar de app na een tijdje: even verversen
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && lees(OPSLAG.url)) vernieuwen(true);
+        if (document.visibilityState === 'visible') vernieuwen(true);
     });
 }
 
