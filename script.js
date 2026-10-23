@@ -1,7 +1,7 @@
 // ---------- Instellingen & staat ----------
 
 // Web-app URL van het Apps Script in de urenstaat-Sheet
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwrlKV6y7xTYcZH1hL5gO41QVuvJeIHw9pGUnLV8duHPAec6tqJNoSV0igTlDEP3fDQzQ/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxbK7xe7ZsYIdXK73YwzDvj-p6s4_0P2KBfB10ATEV01rT2CYDxOrmHOvO6Olk1v-N20w/exec';
 const CACHE_SLEUTEL = 'uren_cache';
 const WACHTWOORD_SLEUTEL = 'uren_wachtwoord';
 
