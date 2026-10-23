@@ -66,7 +66,11 @@ async function verstuur(actie, data, geheim) {
         // Geen eigen headers: dan blijft het een "simple request" en is er geen CORS-preflight nodig
         res = await fetch(WEBAPP_URL, { method: 'POST', body: JSON.stringify({ geheim, actie, ...data }) });
     } catch {
-        throw new Error('Geen verbinding. Check je internet.');
+        // Google stuurt bij een scriptfout of oude implementatie een HTML-pagina zonder CORS-headers,
+        // waardoor fetch faalt alsof er geen internet is
+        throw new Error(navigator.onLine === false
+            ? 'Geen internet. Probeer het zo opnieuw.'
+            : 'Urenstaat niet bereikbaar. Is het Apps Script geïmplementeerd als nieuwe versie?');
     }
 
     let json;
